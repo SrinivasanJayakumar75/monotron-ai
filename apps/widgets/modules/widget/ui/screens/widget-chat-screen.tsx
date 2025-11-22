@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
+import {DicebearAvatar} from "@workspace/ui/components/dicebear-avatar";
 import { useThreadMessages, toUIMessages } from "@convex-dev/agent/react";
 import { Button } from "@workspace/ui/components/button";
 import { WidgetHeader } from "../components/widget-header";
@@ -12,6 +13,8 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useAction, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { Form, FormField} from "@workspace/ui/components/form";
+import { UseInfiniteScroll} from "@workspace/ui/hooks/use-infinite-scroll";
+import { InfiniteScrollTrigger } from "@workspace/ui/components/infinite-scroll-trigger";
 import {
     AIConversation,
     AIConversationContent,
@@ -65,6 +68,14 @@ export const WidgetChatScreen = () => {
         : "skip",
         {initialNumItems: 10},
     );
+
+    const {topElementRef, handleLoadMore, canLoadMore, isLoadingMore} = UseInfiniteScroll(
+        {status: messages.status,
+        loadMore: messages.loadMore,
+        loadSize: 10
+        }
+    );
+
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -120,10 +131,21 @@ export const WidgetChatScreen = () => {
                                     {message.content}
                                 </AIResponse>
                             </AIMessageContent>
+                            {message.role === "assistant" && (
+                                <DicebearAvatar
+                                imageUrl="/logo.svg"
+                                seed="assistant"
+                                size={32}/>
+                            )} 
                         </AIMessage>
                     )
                 })}
             </AIConversationContent>
+            <InfiniteScrollTrigger
+            canLoadMore={canLoadMore}
+            isLoadingMore={isLoadingMore}
+            onLoadMore={handleLoadMore}
+            ref={topElementRef}/>
         </AIConversation>
         <Form {...form}>
             <AIInput 
