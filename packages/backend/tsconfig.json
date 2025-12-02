@@ -2,6 +2,9 @@
   "extends": "@workspace/typescript-config/base.json",
   "compilerOptions": {
     "baseUrl":".",
+    "skipLibCheck": true,
+    "noEmit": true,
+    "strict": false,
     "paths": {
         "@workspace/backend/*": ["./convex/*"],
     }
