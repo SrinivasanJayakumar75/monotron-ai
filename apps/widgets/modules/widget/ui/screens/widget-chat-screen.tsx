@@ -8,7 +8,7 @@ import { useThreadMessages, toUIMessages } from "@convex-dev/agent/react";
 import { Button } from "@workspace/ui/components/button";
 import { WidgetHeader } from "../components/widget-header";
 import { ArrowLeftIcon, MenuIcon } from "lucide-react";
-import { contactSessionIdAtomFamily, conversationIdAtom, organizationIdAtom, screenAtom } from "../../atoms/widget-atoms";
+import { contactSessionIdAtomFamily, conversationIdAtom, organizationIdAtom, screenAtom , widgetSettingsAtom} from "../../atoms/widget-atoms";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useAction, useQuery } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
