@@ -42,6 +42,7 @@ export const WidgetChatScreen = () => {
     const setScreen = useSetAtom(screenAtom);
     const setConversationId = useSetAtom(conversationIdAtom);
     const conversationId = useAtomValue(conversationIdAtom);
+    const widgetSettings = useAtomValue(widgetSettingsAtom);
     const organizationId = useAtomValue(organizationIdAtom);
     const contactSessionId = useAtomValue(
         contactSessionIdAtomFamily(organizationId || "")
@@ -51,6 +52,18 @@ export const WidgetChatScreen = () => {
         setConversationId(null);
         setScreen("selection");
     }
+
+    const suggestions = useMemo(() => {
+        if(!widgetSettings){
+            return [];
+        }
+
+        return Object.keys(widgetSettings.defaultSuggestions).map((key) => {
+            return widgetSettings.defaultSuggestions[
+                key as keyof typeof widgetSettings.defaultSuggestions
+            ]
+        })
+    }, [widgetSettings])
 
     const conversation = useQuery(api.public.conversations.getOne, 
         conversationId && contactSessionId ?{
@@ -147,6 +160,31 @@ export const WidgetChatScreen = () => {
             onLoadMore={handleLoadMore}
             ref={topElementRef}/>
         </AIConversation>
+        {toUIMessages(message.results ?? [])?.length === 1 && (
+        <AISuggestions className="flex w-full flex-col items-end p-2">
+            {suggestions.map((suggestion)=> {
+                if(!suggestion){
+                    return null;
+                }
+                return (
+                    <AISuggestion
+                    key={suggestion}
+                    onClick={()=>{
+                        form.setValue("message", suggestion, {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                            shouldtouch: true,
+                        });
+                        form.handleSubmit(onSubmit)();
+                    }}
+                    suggestion={suggestion}/>
+
+                    
+                )
+            })}
+
+        </AISuggestions>
+        )}
         <Form {...form}>
             <AIInput 
             className="rounded-none border-x-0 border-b-0"
