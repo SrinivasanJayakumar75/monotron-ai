@@ -2,7 +2,7 @@
 
 import { useAtomValue, useSetAtom } from "jotai";
 import { LoaderIcon } from "lucide-react";
-import { contactSessionIdAtomFamily, errorMessageAtom, loadingMessageAtom, organizationIdAtom, screenAtom, widgetSettingsAtom } from "../../atoms/widget-atoms";
+import { contactSessionIdAtomFamily, errorMessageAtom, loadingMessageAtom, organizationIdAtom, screenAtom, widgetSettingsAtom,vapiSecretsAtom } from "../../atoms/widget-atoms";
 import { WidgetHeader } from "../components/widget-header";
 import { useEffect, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
@@ -21,7 +21,7 @@ export const WidgetLoadingScreen = ({organizationId}:{organizationId: string | n
     const setLoadingmessage = useSetAtom(loadingMessageAtom);
     const setErrorMessage = useSetAtom(errorMessageAtom);
     const setScreen = useSetAtom(screenAtom);
-    const setVapiSecrets = useSetAtom(vapiSecretAtom);
+    const setVapiSecrets = useSetAtom(vapiSecretsAtom);
 
     const contactSessionId = useAtomValue(contactSessionIdAtomFamily(organizationId || ""));
 
@@ -104,7 +104,7 @@ export const WidgetLoadingScreen = ({organizationId}:{organizationId: string | n
             return;
         }
 
-        setLoadingMessage("Loading widget settings...");
+        setLoadingmessage("Loading widget settings...");
 
         if (widgetSettings != undefined){
             setWidgetSettings(widgetSettings);
@@ -117,7 +117,7 @@ export const WidgetLoadingScreen = ({organizationId}:{organizationId: string | n
         widgetSettings,
         setStep,
         setWidgetSettings,
-        setLoadingMessage,
+        setLoadingmessage,
     ]);
 
     const getVapiSecrets = useAction(api.public.secrets.getVapiSecrets);
@@ -131,7 +131,7 @@ export const WidgetLoadingScreen = ({organizationId}:{organizationId: string | n
             setScreen("error");
             return;
         }
-        setLoadingMessage("Loading voice features...")
+        setLoadingmessage("Loading voice features...")
         getVapiSecrets({organizationId})
         .then((secrets)=> {
             setVapiSecrets(secrets);
@@ -146,7 +146,7 @@ export const WidgetLoadingScreen = ({organizationId}:{organizationId: string | n
         organizationId,
         getVapiSecrets,
         setVapiSecrets,
-        setLoadingMessage,
+        setLoadingmessage,
         setStep,
     ])
 
