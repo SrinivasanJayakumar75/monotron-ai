@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.35.0",
+    "@convex-dev/agent": "0.1.16",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -43,6 +44,7 @@
     "@workspace/backend": "workspace:*",
     "@workspace/math": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "bowser": "^2.13.1",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "convex": "^1.29.0",
@@ -62,8 +64,7 @@
     "recharts": "2.15.4",
     "sonner": "^2.0.7",
     "vaul": "^1.1.2",
-    "zod": "^3.25.76",
-    "@convex-dev/agent": "0.1.16"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.19.9",
