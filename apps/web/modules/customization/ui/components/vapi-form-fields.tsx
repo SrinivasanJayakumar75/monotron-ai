@@ -11,14 +11,16 @@ import {
 } from "@workspace/ui/components/form";
 import {
     Select,
-    SelectContext,
+    SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
 } from "@workspace/ui/components/select";
+import { FormSchema } from "../../types";
 
 interface VapiFormFieldsProps {
     form : UseFormReturn<FormSchema>;
+    disabled?: boolean;
 };
 
 export const VapiFormFields = ({
@@ -28,8 +30,9 @@ export const VapiFormFields = ({
     const {data: assistants, isLoading: assistantsLoading} = useVapiAssistants();
     const {data: phoneNumbers, isLoading: phoneNumbersLoading} = useVapiPhoneNumbers();
 
-    const disabled = form.formState.isSubmitting;
+    const isDisabled = disabled || form.formState.isSubmitting;
 
+    
     return (
         <>
         <FormField
@@ -39,8 +42,8 @@ export const VapiFormFields = ({
                                         <FormItem>
                                             <FormLabel>Voice Assistant</FormLabel>                                            
                                               <Select
-                                                disabled={assistantLoading || disabled}
-                                                onValueChanged={field.onChange}
+                                                disabled={assistantsLoading || disabled}
+                                                onValueChange={field.onChange}
                                                 value={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger>                                          
@@ -78,7 +81,7 @@ export const VapiFormFields = ({
                                             <FormLabel>Display Phone Number</FormLabel>                                            
                                               <Select
                                                 disabled={phoneNumbersLoading || disabled}
-                                                onValueChanged={field.onChange}
+                                                onValueChange={field.onChange}
                                                 value={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger>                                          

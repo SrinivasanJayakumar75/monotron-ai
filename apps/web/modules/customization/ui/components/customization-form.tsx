@@ -25,6 +25,10 @@ import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import {FormSchema} from "../../types";
 import {widgetSettingsSchema} from "../../schemas";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Separator } from "@workspace/ui/components/separator";
+import { Input } from "@workspace/ui/components/input";
+import { VapiFormFields } from "./vapi-form-fields";
 
 
 
@@ -55,7 +59,7 @@ export const CustomizationForm = ({
             },
             vapiSettings: {
                 assistantId: initialData?.vapiSettings.assistantId || "",
-                phoneNumber: initialdata?.vapiSettings.phoneNumber || "",
+                phoneNumber: initialData?.vapiSettings.phoneNumber || "",
             }
         }
     })
