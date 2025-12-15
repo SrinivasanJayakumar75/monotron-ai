@@ -33,6 +33,7 @@ import {
 } from "@workspace/ui/components/ai/message";
 import { AIResponse } from "@workspace/ui/components/ai/response";
 import { AISuggestion, AISuggestions,} from "@workspace/ui/components/ai/suggestion";
+import { useMemo } from "react";
 
 const formSchema = z.object({
     message: z.string().min(1, "Message is required"),
@@ -160,7 +161,7 @@ export const WidgetChatScreen = () => {
             onLoadMore={handleLoadMore}
             ref={topElementRef}/>
         </AIConversation>
-        {toUIMessages(message.results ?? [])?.length === 1 && (
+        {toUIMessages(messages.results ?? [])?.length === 1 && (
         <AISuggestions className="flex w-full flex-col items-end p-2">
             {suggestions.map((suggestion)=> {
                 if(!suggestion){
@@ -173,7 +174,7 @@ export const WidgetChatScreen = () => {
                         form.setValue("message", suggestion, {
                             shouldValidate: true,
                             shouldDirty: true,
-                            shouldtouch: true,
+                            shouldTouch: true,
                         });
                         form.handleSubmit(onSubmit)();
                     }}
