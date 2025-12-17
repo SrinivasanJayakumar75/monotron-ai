@@ -172,7 +172,7 @@ export const ConversationIdView = ({
                         key={message.id}>
                             <AIMessageContent>
                                 <AIResponse>
-                                    {message.content}
+                                    {(message as any).content}
                                 </AIResponse>
                             </AIMessageContent>
                             {message.role === "user" && (
