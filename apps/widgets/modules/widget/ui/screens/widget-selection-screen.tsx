@@ -9,6 +9,7 @@ import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { useState } from "react";
 import { WidgetFooter } from "../components/widget-footer";
+import Image from "next/image";
 
 export const WidgetSelectionScreen = () => {
     const setScreen = useSetAtom(screenAtom);
@@ -56,13 +57,16 @@ export const WidgetSelectionScreen = () => {
     return (
         <>
         <WidgetHeader>
-             <div className="flex flex-col justify-between gap-y-2 px-2 py-6 font-semibold">
-                    <p className="font-semibold text-3xl">
-                        Hi there! ✋
+             <div className="flex px-1 py-1 font-semibold">
+                <Image className="pe-2" src="/aiavatar.png" alt="Logo" width={50} height={30}/>
+                <div className="flex flex-col">
+                    <p className="font-semibold text-md">
+                        Mona
                     </p>
-                    <p className="text-lg">
-                        Let&apos;s get you started
+                    <p className="text-sm">
+                        AI Assistant
                     </p>
+                    </div>
                 </div>
         </WidgetHeader>
         <div className="flex flex-1 flex-col gap-y-4 p-4 overflow-y-auto">

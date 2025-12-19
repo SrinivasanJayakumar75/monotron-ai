@@ -3,10 +3,13 @@
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import {CreditCardIcon,
     InboxIcon,
-    LayoutDashboardIcon,
-    LibraryBigIcon,
+    ActivityIcon,
+    AnchorIcon,
     Mic,
     PaletteIcon,
+    BrushIcon,
+    MicVocalIcon,
+    ChartBarIcon,
 } from "lucide-react";
 
 import Image from "next/image";
@@ -31,12 +34,12 @@ const customerSupportItems = [
     {
         title: "Conversations",
         url: "/conversations",
-        icon: InboxIcon,
+        icon: ChartBarIcon,
     },
         {
         title: "Knowledge Base",
         url: "/files",
-        icon: LibraryBigIcon,
+        icon: AnchorIcon,
     },
 
 ];
@@ -44,17 +47,17 @@ const customerSupportItems = [
 const configurationItems = [
     {title: "Widget Customization",
         url: "/customization",
-        icon: PaletteIcon,
+        icon: BrushIcon,
     },
                     {
         title: "Integrations",
         url: "/integrations",
-        icon: LayoutDashboardIcon,
+        icon: ActivityIcon,
     },
             {
         title: "Voice Assistant",
         url: "/plugins/vapi",
-        icon: Mic,
+        icon: MicVocalIcon,
     },
 ];
 
@@ -113,7 +116,7 @@ export const DashboardSidebar = () => {
                                     isActive(item.url)
                                 }
                                 className={cn(
-                                    isActive(item.url) && "bg-gradient-to-b from-sidebar-primary to-[#0b63f3]! text-sidebar-primary-foreground! hover:to-[#0b63f3]/90!"
+                                    isActive(item.url) && "bg-gradient-to-b from-[#1a4d2e] to-[#0d3b21]! text-sidebar-primary-foreground! hover:to-[#0d3b21]/90!"
                                 )}
                                  tooltip={item.title}>
                                     <Link href={item.url}>
@@ -140,7 +143,7 @@ export const DashboardSidebar = () => {
                                     isActive(item.url)
                                 }
                                  className={cn(
-                                    isActive(item.url) && "bg-gradient-to-b from-sidebar-primary to-[#0b63f3]! text-sidebar-primary-foreground! hover:to-[#0b63f3]/90!"
+                                    isActive(item.url) && "bg-gradient-to-b from-[#1a4d2e] to-[#0d3b21]! text-sidebar-primary-foreground! hover:to-[#0d3b21]/90!"
                                 )}
                                 
                                  tooltip={item.title}>
@@ -168,7 +171,7 @@ export const DashboardSidebar = () => {
                                     isActive(item.url)
                                 }
                                  className={cn(
-                                    isActive(item.url) && "bg-gradient-to-b from-sidebar-primary to-[#0b63f3]! text-sidebar-primary-foreground! hover:to-[#0b63f3]/90!"
+                                    isActive(item.url) && "bg-gradient-to-b from-[#1a4d2e] to-[#0d3b21]! text-sidebar-primary-foreground! hover:to-[#0d3b21]/90!"
                                 )}
                                  tooltip={item.title}>
                                     <Link href={item.url}>
