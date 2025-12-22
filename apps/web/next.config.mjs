@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  
-  transpilePackages: ["@workspace/ui", "@workspace/backend"],
+  output: 'standalone',
+  transpilePackages: ["@workspace/ui"],
 }
 
 export default nextConfig
