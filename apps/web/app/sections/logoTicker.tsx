@@ -4,7 +4,7 @@ import Image from "next/image";
 import {motion} from "framer-motion"
 
 export const LogoTicker = () => {
-    return <div className="py-8 md:py-10 mt-10 bg-white">
+    return <div className="py-8 md:py-8 mt-4">
         <div className="container">
             <div className="flex justify-center overflow-hidden [mask-image:linear-gradient(to_right,transparent,black,transparent)]">
             <motion.div className="flex gap-14 flex-none pr-14" animate={{

@@ -4,7 +4,7 @@ export const Footer = () => {
     return <footer className="bg-black text-[#BCBCBC] text-sm py-10 text-center">
         <div className="container">
             <div className="inline-flex relative">
-            <Image src="logo.svg" alt="Logo" width={40} height={30}/>
+            <Image src="/Sitelogo.png" alt="Logo" width={40} height={30}/>
             </div>
             <nav className="flex flex-col md:flex-row justify-center gap-4 mt-4">
                 <a href="#">Company</a>
