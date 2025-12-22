@@ -1,5 +1,5 @@
 
-import { Users, FileText, Zap, Shield, Globe, Sparkles, Plug } from "lucide-react";
+import { Users, FileText, Zap, Shield, Globe, Sparkles, Plug, ArrowBigRight } from "lucide-react";
 import FeatureCard from "./scrollscreenFeatureCard";
 import SplitScrollLayout from "./splitScreenlayout";
 
@@ -107,9 +107,9 @@ const FeatureIn = () => {
             badges={["Easy", "Fast"]}
           />
           <FeatureCard
-            title="Global Scale"
-            description="Deploy anywhere with our distributed infrastructure. Low latency access from any location."
-            icon={<Globe className="h-5 w-5" />}
+            title="Escalate"
+            description="Switch from AI to human chat Any time easily."
+            icon={<ArrowBigRight className="h-5 w-5" />}
           />
           <FeatureCard
             title="AI Powered"
