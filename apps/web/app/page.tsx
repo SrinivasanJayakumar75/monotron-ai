@@ -10,10 +10,7 @@ import Script from "next/script";
 export default function Page  () {
     return (
     <>
-
-    <Script src="http://localhost:3001/widget.js" data-organization-id="org_35KsEwMA4r8vLk2ftDJvzdlqsd7"/>
-        
-        <Hero/>
+         <Hero/>
         <ProductShowcase/>
         <FeaturesSection/>
         <FeatureIn/>
