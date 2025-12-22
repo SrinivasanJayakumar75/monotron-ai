@@ -5,11 +5,13 @@ import { ProductShowcase } from "./sections/productShowcase"
 import { Footer } from "./sections/footer"
 import FeaturesSection from "./sections/featureSection"
 import FeatureIn from "./sections/FeatureIn"
+import Script from "next/script";
 
-export default function page  () {
+export default function Page  () {
     return (
     <>
-    <script src="http://localhost:3001/widget.js" data-organization-id="org_35KsEwMA4r8vLk2ftDJvzdlqsd7"></script>
+
+    <Script src="http://localhost:3001/widget.js" data-organization-id="org_35KsEwMA4r8vLk2ftDJvzdlqsd7"/>
         
         <Hero/>
         <ProductShowcase/>
