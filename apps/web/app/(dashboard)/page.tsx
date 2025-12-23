@@ -12,7 +12,7 @@ export default function Page() {
   const addUser = useMutation(api.users.add);
   return (
     <>
-    {/* <Authenticated> */}
+     <Authenticated>
     <div className="flex items-center justify-center min-h-svh">
       <p>apps/web</p>
       <UserButton/>
@@ -20,11 +20,11 @@ export default function Page() {
       <Button onClick={()=>addUser()}>Add</Button>
 
     </div>
-    {/* </Authenticated>
+     </Authenticated>
     <Unauthenticated>
       <p>Must be signed in</p>
       <SignInButton>SignIn</SignInButton>
-    </Unauthenticated> */}
+    </Unauthenticated> 
     </>
   )
 }
