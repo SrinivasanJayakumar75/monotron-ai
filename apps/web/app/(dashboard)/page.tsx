@@ -1,4 +1,3 @@
-"use client";
 
 import { OrganizationSwitcher, SignInButton, UserButton } from "@clerk/nextjs";
 import { Authenticated, Unauthenticated } from "convex/react";
