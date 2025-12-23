@@ -1,4 +1,4 @@
-import { Plus, MoreHorizontal, Check, MessageSquare, Paperclip, User, ArrowBigRight, ArrowUp } from "lucide-react";
+import { Plus, MoreHorizontal, Check, MessageSquare, Paperclip, ArrowBigRight, ArrowUp } from "lucide-react";
 
 const TeamPlannerMockup = () => {
   return (

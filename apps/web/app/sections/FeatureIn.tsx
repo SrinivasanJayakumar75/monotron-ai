@@ -1,5 +1,5 @@
 
-import { Users, FileText, Zap, Shield, Globe, Sparkles, Plug, ArrowBigRight } from "lucide-react";
+import { Users, FileText, Zap, Sparkles, Plug, ArrowBigRight } from "lucide-react";
 import FeatureCard from "./scrollscreenFeatureCard";
 import SplitScrollLayout from "./splitScreenlayout";
 
