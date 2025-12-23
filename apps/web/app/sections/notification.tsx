@@ -1,4 +1,4 @@
-import { Bell, LibrarySquareIcon } from "lucide-react";
+import { LibrarySquareIcon } from "lucide-react";
 
 const NotificationsMockup = () => {
   return (

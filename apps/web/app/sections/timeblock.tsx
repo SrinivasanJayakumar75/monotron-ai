@@ -1,4 +1,4 @@
-import { Plus, Copy, Users, Clock } from "lucide-react";
+import { Plus, Users, Clock } from "lucide-react";
 
 const TimeBlockingMockup = () => {
   const timeSlots = ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM'];

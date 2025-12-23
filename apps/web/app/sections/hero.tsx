@@ -2,8 +2,6 @@
 
 import { ArrowRight, MenuIcon } from "lucide-react"
 import Image from "next/image"
-import { LogoTicker } from "./logoTicker"
-import Link from "next/link" 
 import { HeroCTA } from "./herocta"
 
 export const Hero = () => {
