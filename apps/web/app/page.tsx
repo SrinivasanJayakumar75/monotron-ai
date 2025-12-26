@@ -9,7 +9,7 @@ export default function Page  () {
     return (
 
     <>
-    <script src="http://localhost:3001/widget.js" data-organization-id="org_35KsEwMA4r8vLk2ftDJvzdlqsd7"></script>
+    <script src="https://monotron-ai-widgets-mupe.vercel.app/widget.js" data-organization-id="org_35KsEwMA4r8vLk2ftDJvzdlqsd7"></script>
          <Hero/>
         <ProductShowcase/>
         <FeaturesSection/>
