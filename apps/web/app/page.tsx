@@ -5,6 +5,7 @@ import FeaturesSection from "./sections/featureSection"
 import FeatureIn from "./sections/FeatureIn"
 
 
+
 export default function Page  () {
     return (
 
@@ -15,6 +16,7 @@ export default function Page  () {
         <FeaturesSection/>
         <FeatureIn/>
         <Footer/>
+        
         
 
     </>)
