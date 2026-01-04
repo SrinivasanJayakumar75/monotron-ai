@@ -13,23 +13,25 @@ const plans = [
     features: [
       "Dashboard Chatting",
       "Human to human chat only",
-      "Upto 2 organization"
+      "Get Customer details",
+      "Send Email to Customers"
     ],
     cta: "Get Started",
     popular: false,
   },
   {
     name: "Pro",
-    price: "$9",
+    price: "$4",
     period: "/month",
     description: "For growing teams and businesses",
     features: [
-      "Upto 5 Organization",
       "AI Response",
       "AI Calling Feature",
       "Escalate Feature for Human Chat",
       "Team collaboration",
       "Knowledge Base",
+      "Get Customer details",
+      "Send Email to Customers"
     ],
     cta: "Start Now",
     popular: true,

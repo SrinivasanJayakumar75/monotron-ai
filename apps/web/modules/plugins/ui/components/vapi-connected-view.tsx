@@ -74,7 +74,7 @@ export const VapiConnectedView = ({onDisconnect}: VapiConnectedViewProps)=> {
                                 </CardDescription>
                             </div>
                         </div>
-                        <Button asChild>
+                        <Button asChild className="bg-green-800 hover:bg-green-900">
                             <Link href="/customization">
                             <SettingsIcon/>
                             Configure

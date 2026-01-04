@@ -41,11 +41,7 @@ const features: Feature[] = [
         label: "AI Voice Agent",
         description: "Natural voice conversations with customers",
     },
-    {
-        icon: PhoneIcon,
-        label: "Phone System",
-        description: "Inbound & outbound calling capabilities",
-    },
+
     {
         icon: BookOpenIcon,
         label: "Knowledge Base",

@@ -71,7 +71,7 @@ export const IntegrationsView = () => {
                         value={organization?.id ?? ""}
                          className="flex-1 bg-background font-mono text-sm"/>
                          <Button
-                         className="gap-2"
+                         className="gap-2 bg-green-800 hover:bg-green-900"
                          onClick={handleCopy}
                          size="sm">
                             <CopyIcon className="size-4"/>

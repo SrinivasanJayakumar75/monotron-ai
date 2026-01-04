@@ -203,7 +203,7 @@ if (contactSession === undefined || contactSession == null){
 
                     </div>
                 </div>
-                <Button asChild className="w-full" size="lg">
+                <Button asChild className="w-full bg-green-600 hover:bg-green-700" size="lg">
                     <Link href={`mailto:${contactSession.email}`}>
                     <MailIcon/>
                     <span>Send Email</span>

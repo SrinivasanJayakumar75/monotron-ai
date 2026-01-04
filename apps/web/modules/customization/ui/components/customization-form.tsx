@@ -213,7 +213,7 @@ export const CustomizationForm = ({
                 )}
 
                 <div className="flex justify-end">   
-                    <Button disabled={form.formState.isSubmitting} type="submit">
+                    <Button className="bg-green-800 hover:bg-green-900" disabled={form.formState.isSubmitting} type="submit">
                         Save Settings
                     </Button>
                 </div>

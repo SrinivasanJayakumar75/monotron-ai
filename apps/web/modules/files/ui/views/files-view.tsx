@@ -83,7 +83,7 @@ export const FilesView = () => {
                 </div>
                 <div className="mt-8 rounded-lg border bg-background">
                     <div className="flex items-center justify-end border-b px-6 py-4">
-                        <Button 
+                        <Button className="bg-green-800 hover:bg-green-900"
                         onClick={() => setUploadDialogOpen(true)}>
                             <PlusIcon/>
                             Add New
