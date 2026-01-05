@@ -5,8 +5,12 @@ export default defineSchema({
     subscriptions: defineTable({
             organizationId: v.string(),
             status: v.string(),
+            polarSubscriptionId: v.optional(v.string()),
+            polarCustomerId: v.optional(v.string()),
+            planName: v.optional(v.string()),
     })
-    .index("by_organization_id", ["organizationId"]),
+    .index("by_organization_id", ["organizationId"])
+    .index("by_polar_customer_id", ["polarCustomerId"]),
     widgetSettings: defineTable({
         organizationId: v.string(),
         greetMessage: v.string(),
