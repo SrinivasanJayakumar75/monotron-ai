@@ -12,7 +12,7 @@ export const ProductShowcase = () => {
             <p className="font-mono text-center text-[22px] leading-[30px] tracking-tight mt-5 font-bold tracking-tighter bg-gradient-to-b from-black to-[#001E80] text-transparent bg-clip-text">With our excellent AI calling feature you can easily progress sales</p>
             </div>
             <div className="flex justify-center mt-10">
-            <Image src="/Dshlogo.png" alt="Logo" width={1000} height={1000}/>
+            <Image src="/dshlogo.png" alt="Logo" width={1000} height={1000}/>
             </div>
 
         </div>
