@@ -79,7 +79,7 @@ export const DashboardSidebar = () => {
         return pathname.startsWith(url);
     }
     return (
-        <Sidebar className="group" collapsible="icon">
+        <Sidebar className="group [&_span]:!text-white [&_.sidebar-group-label]:!text-gray-300" collapsible="icon">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -104,7 +104,7 @@ export const DashboardSidebar = () => {
             </SidebarHeader>
            <SidebarContent>
             <SidebarGroup>
-                <SidebarGroupLabel>
+                <SidebarGroupLabel className="text-white">
                     Customer Support
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -120,7 +120,7 @@ export const DashboardSidebar = () => {
                                 )}
                                  tooltip={item.title}>
                                     <Link href={item.url}>
-                                    <item.icon className="size-4"/>
+                                    <item.icon className="size-4 text-white"/>
                                     <span>{item.title}</span>
                                     </Link>
 
@@ -131,7 +131,7 @@ export const DashboardSidebar = () => {
                 </SidebarGroupContent>
             </SidebarGroup>
             <SidebarGroup>
-                <SidebarGroupLabel>
+                <SidebarGroupLabel className="text-white">
                     Configuration
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -148,7 +148,7 @@ export const DashboardSidebar = () => {
                                 
                                  tooltip={item.title}>
                                     <Link href={item.url}>
-                                    <item.icon className="size-4"/>
+                                    <item.icon className="size-4 text-white"/>
                                     <span>{item.title}</span>
                                     </Link>
 
@@ -159,7 +159,7 @@ export const DashboardSidebar = () => {
                 </SidebarGroupContent>
             </SidebarGroup>
              <SidebarGroup>
-                <SidebarGroupLabel>
+                <SidebarGroupLabel className="text-white">
                     Account
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -175,7 +175,7 @@ export const DashboardSidebar = () => {
                                 )}
                                  tooltip={item.title}>
                                     <Link href={item.url}>
-                                    <item.icon className="size-4"/>
+                                    <item.icon className="size-4 text-white"/>
                                     <span>{item.title}</span>
                                     </Link>
 
