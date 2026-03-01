@@ -102,15 +102,26 @@ export const CustomizationForm = ({
                 vapiSettings,
                 widgetColor: values.widgetColor,
                 blogLinks:
-                    values.blogLinks?.filter(
-                        (b) => (b.title ?? "").trim() || (b.url ?? "").trim()
-                    ) ?? [],
+                    values.blogLinks
+                        ?.filter(
+                            (b) =>
+                                (b.title ?? "").trim() || (b.url ?? "").trim()
+                        )
+                        ?.map((b) => ({
+                            title: b.title ?? "",
+                            url: b.url ?? "",
+                        })) ?? [],
                 faqs:
-                    values.faqs?.filter(
-                        (f) =>
-                            (f.question ?? "").trim() ||
-                            (f.answer ?? "").trim()
-                    ) ?? [],
+                    values.faqs
+                        ?.filter(
+                            (f) =>
+                                (f.question ?? "").trim() ||
+                                (f.answer ?? "").trim()
+                        )
+                        ?.map((f) => ({
+                            question: f.question ?? "",
+                            answer: f.answer ?? "",
+                        })) ?? [],
             });
 
             toast.success("Widget settings saved");
