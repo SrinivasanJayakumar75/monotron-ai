@@ -18,7 +18,24 @@ export default defineSchema({
         vapiSettings: v.object({
             assistantId: v.optional(v.string()),
             phoneNumber: v.optional(v.string()),
-        })
+        }),
+        widgetColor: v.optional(v.string()),
+        blogLinks: v.optional(
+            v.array(
+                v.object({
+                    title: v.string(),
+                    url: v.string(),
+                })
+            )
+        ),
+        faqs: v.optional(
+            v.array(
+                v.object({
+                    question: v.string(),
+                    answer: v.string(),
+                })
+            )
+        ),
     })
     .index("by_organization_id", ["organizationId"]),
     plugins: defineTable({
