@@ -32,21 +32,14 @@ export const WidgetVoiceScreen = () => {
         <>
         <WidgetHeader>
             <div className="flex items-center gap-x-2">
-                <Button
-                variant="transparent"
-                size="icon"
-                onClick={()=>setScreen("selection")}>
+                <Button variant="ghost" size="icon" className="text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1f2937]" onClick={()=>setScreen("selection")}>
                     <ArrowLeftIcon/>
-
                 </Button>
-                <p>
-                    Voice Chat
-                </p>
-
+                <p className="text-sm font-medium text-[#1f2937]">Voice Chat</p>
             </div>
         </WidgetHeader>
         {transcript.length > 0 ?(
-            <AIConversation className="h-full">
+            <AIConversation className="h-full bg-[#f7f7f8]">
                 <AIConversationContent>
                     {transcript.map((message, index)=> (
                         <AIMessage 
@@ -61,23 +54,21 @@ export const WidgetVoiceScreen = () => {
 
             </AIConversation>
         ):(
-        <div className="flex flex-1 h-full flex-col items-center justify-center gap-y-4">
-            <div className="flex items-center justify-center rounded-full border bg-white p-3">
-                <MicIcon className="size-6 text-muted-foreground"/>
+        <div className="flex flex-1 h-full flex-col items-center justify-center gap-y-4 bg-[#f7f7f8]">
+            <div className="flex size-14 items-center justify-center rounded-full bg-white shadow-sm">
+                <MicIcon className="size-7 text-[#6b7280]"/>
             </div>
-            <p className="text-muted-foreground">
-                Transcript will appear here
-            </p>
+            <p className="text-sm text-[#6b7280]">Transcript will appear here</p>
         </div>
         )}
-        <div className="border-t bg-background p-4">
+        <div className="border-t border-[#e5e7eb] bg-white p-4">
             <div className="flex flex-col items-center gap-y-4">
                 {isConnected && (
                 <div className="flex items-center gap-x-2">
                     <div className={cn("size-4 rounded-full",
                         isSpeaking ? "animate-pulse bg-red-500" : "bg-green-500"
                     )}/>   
-                    <span className="text-muted-foreground text-sm">
+                    <span className="text-sm text-[#6b7280]">
                         {isSpeaking ? "Assistant Speaking..." : "Listening..."}
                     </span>
                 </div>
@@ -85,7 +76,7 @@ export const WidgetVoiceScreen = () => {
                 <div className="flex w-full justify-center">
                     {isConnected ? (
                         <Button
-                        className="w-full"
+                        className="w-full rounded-xl"
                         size="lg"
                         variant="destructive"
                         onClick={() => endCall()}>

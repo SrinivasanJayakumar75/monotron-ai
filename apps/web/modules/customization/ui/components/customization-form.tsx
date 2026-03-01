@@ -1,5 +1,5 @@
 import {z} from "zod";
-import {useForm} from "react-hook-form";
+import {useForm, useFieldArray} from "react-hook-form";
 import {toast} from "sonner";
 import {Button} from "@workspace/ui/components/button";
 import {
@@ -29,6 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Separator } from "@workspace/ui/components/separator";
 import { Input } from "@workspace/ui/components/input";
 import { VapiFormFields } from "./vapi-form-fields";
+import { PlusIcon, Trash2Icon } from "lucide-react";
 
 
 
@@ -60,8 +61,27 @@ export const CustomizationForm = ({
             vapiSettings: {
                 assistantId: initialData?.vapiSettings.assistantId || "",
                 phoneNumber: initialData?.vapiSettings.phoneNumber || "",
-            }
+            },
+            widgetColor: initialData?.widgetColor || "#4F46E5",
+            blogLinks:
+                initialData?.blogLinks && initialData.blogLinks.length > 0
+                    ? initialData.blogLinks
+                    : [{ title: "", url: "" }],
+            faqs:
+                initialData?.faqs && initialData.faqs.length > 0
+                    ? initialData.faqs
+                    : [{ question: "", answer: "" }],
         }
+    })
+
+    const blogLinksFields = useFieldArray({
+        control: form.control,
+        name: "blogLinks",
+    })
+
+    const faqsFields = useFieldArray({
+        control: form.control,
+        name: "faqs",
     })
 
     const onSubmit = async(values: FormSchema) => {
@@ -79,7 +99,18 @@ export const CustomizationForm = ({
             await upsertWidgetSettings({
                 greetMessage: values.greetMessage,
                 defaultSuggestions: values.defaultSuggestions,
-                vapiSettings
+                vapiSettings,
+                widgetColor: values.widgetColor,
+                blogLinks:
+                    values.blogLinks?.filter(
+                        (b) => (b.title ?? "").trim() || (b.url ?? "").trim()
+                    ) ?? [],
+                faqs:
+                    values.faqs?.filter(
+                        (f) =>
+                            (f.question ?? "").trim() ||
+                            (f.answer ?? "").trim()
+                    ) ?? [],
             });
 
             toast.success("Widget settings saved");
@@ -126,7 +157,38 @@ export const CustomizationForm = ({
 
                             <Separator/>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="mb-4 text-sm">
+                                        Widget color
+                                    </h3>
+                                    <p className="mb-4 text-muted-foreground text-sm">
+                                        Accent color used in the widget selection screen.
+                                    </p>
+                                    <FormField
+                                        control={form.control}
+                                        name="widgetColor"
+                                        render={({ field }) => (
+                                            <FormItem className="max-w-xs">
+                                                <FormLabel>Primary color</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        {...field}
+                                                        type="text"
+                                                        placeholder="#4F46E5"
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Enter a hex color (for example: #4F46E5).
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+
+                                <Separator />
+
                                 <div>
                                     <h3 className="mb-4 text-sm">
                                         Default Suggestions
@@ -183,8 +245,193 @@ export const CustomizationForm = ({
                                     <FormMessage/>
                                 </FormItem>
                             )}/>
+                                    </div>
+                                </div>
 
+                                <Separator />
 
+                                <div className="space-y-4">
+                                    <h3 className="mb-2 text-sm">
+                                        Blog Links
+                                    </h3>
+                                    <p className="mb-4 text-muted-foreground text-sm">
+                                        Highlight key blog posts or documentation pages that visitors can open from the widget. Add as many as you need.
+                                    </p>
+                                    <div className="space-y-4">
+                                        {blogLinksFields.fields.map(
+                                            (field, index) => (
+                                                <div
+                                                    key={field.id}
+                                                    className="flex gap-4 items-start"
+                                                >
+                                                    <div className="grid flex-1 gap-4 md:grid-cols-2">
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`blogLinks.${index}.title`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Title
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            {...field}
+                                                                            placeholder="e.g., Getting started guide"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`blogLinks.${index}.url`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        URL
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            {...field}
+                                                                            placeholder="https://example.com/blog/getting-started"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="mt-8 shrink-0 text-muted-foreground hover:text-destructive"
+                                                        onClick={() =>
+                                                            blogLinksFields.remove(index)
+                                                        }
+                                                    >
+                                                        <Trash2Icon className="size-4" />
+                                                    </Button>
+                                                </div>
+                                            )
+                                        )}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                blogLinksFields.append({
+                                                    title: "",
+                                                    url: "",
+                                                })
+                                            }
+                                        >
+                                            <PlusIcon className="mr-2 size-4" />
+                                            Add blog link
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                <div className="space-y-4">
+                                    <h3 className="mb-2 text-sm">
+                                        FAQs
+                                    </h3>
+                                    <p className="mb-4 text-muted-foreground text-sm">
+                                        Common questions and answers shown in a dedicated FAQs section inside the widget. Add as many as you need.
+                                    </p>
+                                    <div className="space-y-4">
+                                        {faqsFields.fields.map(
+                                            (field, index) => (
+                                                <div
+                                                    key={field.id}
+                                                    className="flex gap-4 items-start"
+                                                >
+                                                    <div className="flex-1 space-y-3">
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`faqs.${index}.question`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Question
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            {...field}
+                                                                            placeholder="e.g., How do I cancel my subscription?"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`faqs.${index}.answer`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Answer
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Textarea
+                                                                            {...field}
+                                                                            rows={3}
+                                                                            placeholder="Explain the steps or link to the relevant help page."
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="mt-8 shrink-0 text-muted-foreground hover:text-destructive"
+                                                        onClick={() =>
+                                                            faqsFields.remove(index)
+                                                        }
+                                                    >
+                                                        <Trash2Icon className="size-4" />
+                                                    </Button>
+                                                </div>
+                                            )
+                                        )}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                faqsFields.append({
+                                                    question: "",
+                                                    answer: "",
+                                                })
+                                            }
+                                        >
+                                            <PlusIcon className="mr-2 size-4" />
+                                            Add FAQ
+                                        </Button>
                                     </div>
                                 </div>
 

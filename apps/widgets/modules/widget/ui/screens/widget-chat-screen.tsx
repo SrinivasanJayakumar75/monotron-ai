@@ -119,21 +119,17 @@ export const WidgetChatScreen = () => {
     return (
         <>
         <WidgetHeader className="flex items-center justify-between">
-             <div className="flex items-center gap-x-2">
-                <Button
-                onClick={onBack}
-                 size="icon"
-                variant="transparent">
-                    <ArrowLeftIcon/>
-                </Button>  
-                <p>Chat</p>       
-                </div>
-                <Button size="icon"
-                variant="transparent">
-                    <MenuIcon/>
+            <div className="flex items-center gap-x-2">
+                <Button onClick={onBack} size="icon" variant="ghost" className="text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1f2937]">
+                    <ArrowLeftIcon />
                 </Button>
+                <p className="text-sm font-medium text-[#1f2937]">Chat</p>
+            </div>
+            <Button size="icon" variant="ghost" className="text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1f2937]">
+                <MenuIcon />
+            </Button>
         </WidgetHeader>
-        <AIConversation>
+        <AIConversation className="bg-[#f7f7f8]">
             <AIConversationContent>
                 {toUIMessages(messages.results ?? [])?.map((message)=> {
                     return (
@@ -188,7 +184,7 @@ export const WidgetChatScreen = () => {
         )}
         <Form {...form}>
             <AIInput 
-            className="rounded-none border-x-0 border-b-0"
+            className="rounded-none border-x-0 border-b-0 border-[#e5e7eb] bg-white"
             onSubmit={form.handleSubmit(onSubmit)}>
                 <FormField
                 control={form.control}

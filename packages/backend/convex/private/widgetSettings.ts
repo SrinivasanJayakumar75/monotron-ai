@@ -12,7 +12,24 @@ export const upsert = mutation({
         vapiSettings: v.object({
             assistantId: v.optional(v.string()),
             phoneNumber: v.optional(v.string()),
-        })
+        }),
+        widgetColor: v.optional(v.string()),
+        blogLinks: v.optional(
+            v.array(
+                v.object({
+                    title: v.string(),
+                    url: v.string(),
+                })
+            )
+        ),
+        faqs: v.optional(
+            v.array(
+                v.object({
+                    question: v.string(),
+                    answer: v.string(),
+                })
+            )
+        ),
     },
     handler: async (ctx, args) => {
          const identity = await ctx.auth.getUserIdentity();
@@ -41,6 +58,9 @@ export const upsert = mutation({
                 greetMessage: args.greetMessage,
                 defaultSuggestions: args.defaultSuggestions,
                 vapiSettings: args.vapiSettings,
+                widgetColor: args.widgetColor,
+                blogLinks: args.blogLinks,
+                faqs: args.faqs,
 
             });
         } else {
@@ -48,7 +68,10 @@ export const upsert = mutation({
                 organizationId: orgId,
                 greetMessage: args.greetMessage,
                 defaultSuggestions: args.defaultSuggestions,
-                vapiSettings: args.vapiSettings
+                vapiSettings: args.vapiSettings,
+                widgetColor: args.widgetColor,
+                blogLinks: args.blogLinks,
+                faqs: args.faqs,
             })
         }
         

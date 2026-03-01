@@ -10,5 +10,22 @@ export const widgetSettingsSchema = z.object({
     vapiSettings: z.object({
         assistantId: z.string().optional(),
         phoneNumber: z.string().optional(),
-    })
+    }),
+    widgetColor: z.string().optional(),
+    blogLinks: z
+        .array(
+            z.object({
+                title: z.string().optional(),
+                url: z.string().optional(),
+            })
+        )
+        .optional(),
+    faqs: z
+        .array(
+            z.object({
+                question: z.string().optional(),
+                answer: z.string().optional(),
+            })
+        )
+        .optional(),
 })

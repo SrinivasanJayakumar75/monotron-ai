@@ -13,8 +13,7 @@ import { Input } from "@workspace/ui/components/input";
 import { WidgetHeader } from "../components/widget-header";
 import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
-import { userAgent } from "next/server";
-import { Doc, Id } from "@workspace/backend/_generated/dataModel";
+import { Doc } from "@workspace/backend/_generated/dataModel";
 import { useAtomValue, useSetAtom } from "jotai";
 import { contactSessionIdAtomFamily, organizationIdAtom, screenAtom } from "../../atoms/widget-atoms";
 
@@ -73,27 +72,25 @@ export const WidgetAuthScreen = () => {
     return (
         <>
         <WidgetHeader>
-             <div className="flex px-1 py-1 font-semibold">
-                <Image className="pe-2" src="/aiavatar.png" alt="Logo" width={50} height={30}/>
-                <div className="flex flex-col">
-                    <p className="font-semibold text-md">
-                        Mona
-                    </p>
-                    <p className="text-sm">
-                        AI Assistant
-                    </p>
-                    </div>
+            <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center overflow-hidden rounded-lg bg-[#f3f4f6]">
+                    <Image src="/aiavatar.png" alt="Logo" width={28} height={28} className="object-cover" />
                 </div>
+                <div className="flex flex-col">
+                    <p className="text-sm font-semibold text-[#1f2937]">Mona</p>
+                    <p className="text-xs text-[#6b7280]">AI Assistant</p>
+                </div>
+            </div>
         </WidgetHeader>
             <Form {...form}>
-                <form className="flex flex-1 flex-col gap-y-4 p-4" onSubmit={form.handleSubmit(onSubmit)}>
+                <form className="flex flex-1 flex-col gap-y-4 bg-[#f7f7f8] p-4" onSubmit={form.handleSubmit(onSubmit)}>
                     <FormField 
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                         <FormItem>
                             <FormControl>
-                                <Input className="h-10 bg-background"
+                                <Input className="h-10 border-[#e5e7eb] bg-white"
                                 placeholder="e.g. John Doe"
                                 type="text"
                                 {...field}/>
@@ -108,7 +105,7 @@ export const WidgetAuthScreen = () => {
                     render={({ field }) => (
                         <FormItem>
                             <FormControl>
-                                <Input className="h-10 bg-background"
+                                <Input className="h-10 border-[#e5e7eb] bg-white"
                                 placeholder="e.g. john.doe@example.com"
                                 type="email"
                                 {...field}/>
@@ -118,6 +115,7 @@ export const WidgetAuthScreen = () => {
                     )}>
                     </FormField>     
                     <Button
+                    className="rounded-xl"
                     disabled={form.formState.isSubmitting}
                     size="lg"
                     type="submit">

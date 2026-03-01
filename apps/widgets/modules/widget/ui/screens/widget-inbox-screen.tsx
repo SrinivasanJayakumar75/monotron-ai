@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtomValue, useSetAtom } from "jotai";
-import { AlertTriangleIcon, ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { contactSessionIdAtomFamily, conversationIdAtom, errorMessageAtom, organizationIdAtom, screenAtom } from "../../atoms/widget-atoms";
 import { WidgetHeader } from "../components/widget-header";
 import { WidgetFooter } from "../components/widget-footer";
@@ -44,26 +44,23 @@ export const WidgetInboxScreen = () => {
     return (
         <>
         <WidgetHeader>
-             <div className="flex items-center gap-x-2">
-                <Button
-                variant="transparent"
-                size="icon"
-                onClick={()=>setScreen("selection")}>
+            <div className="flex items-center gap-x-2">
+                <Button variant="ghost" size="icon" className="text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1f2937]" onClick={()=>setScreen("selection")}>
                     <ArrowLeftIcon/>
                 </Button>
-                <p>Inbox</p>
-                </div>
+                <p className="text-sm font-medium text-[#1f2937]">Inbox</p>
+            </div>
         </WidgetHeader>
-        <div className="flex flex-1 flex-col gap-y-2 p-4 overflow-y-auto">
+        <div className="flex flex-1 flex-col gap-y-2 bg-[#f7f7f8] p-4 overflow-y-auto">
            {conversations?.results.length > 0 && conversations?.results.map((conversation)=>(
             <Button
-            className="h-20 w-full justify-between"
+            className="h-20 w-full justify-between rounded-xl border-0 bg-white shadow-sm hover:shadow-md"
             key={conversation._id}
             onClick={() => {
                 setConversationId(conversation._id)
                 setScreen("chat")
             }}
-            variant="outline">
+            variant="ghost">
                 <div className="flex w-full flex-col gap-4 overflow-hidden text-start">
                     <div className="flex w-full items-center justify-between gap-x-2">
                         <p className="text-muted-foreground text-xs">Chat</p>
