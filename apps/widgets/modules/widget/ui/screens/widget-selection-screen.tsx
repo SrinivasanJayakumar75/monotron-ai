@@ -4,7 +4,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { contactSessionIdAtomFamily, conversationIdAtom, errorMessageAtom, organizationIdAtom, screenAtom,widgetSettingsAtom,hasVapiSecretsAtom } from "../../atoms/widget-atoms";
 import { WidgetHeader } from "../components/widget-header";
 import { Button } from "@workspace/ui/components/button";
-import { ChevronRightIcon, MessageSquareTextIcon, MicIcon, PhoneIcon, BookOpenIcon } from "lucide-react";
+import { ChevronRightIcon, MessageSquareTextIcon, MicIcon, PhoneIcon, BookOpenIcon, NewspaperIcon } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { useState } from "react";
@@ -29,6 +29,9 @@ export const WidgetSelectionScreen = () => {
         (widgetSettings?.blogLinks &&
             widgetSettings.blogLinks.length > 0) ||
         (widgetSettings?.faqs && widgetSettings.faqs.length > 0);
+
+    const hasNews =
+        !!widgetSettings?.news && widgetSettings.news.length > 0;
 
     const accentColor = widgetSettings?.widgetColor || "#4F46E5";
 
@@ -137,6 +140,22 @@ export const WidgetSelectionScreen = () => {
                                     <BookOpenIcon className="size-4 text-[#6b7280]" />
                                 </div>
                                 <span className="font-medium text-[#1f2937]">Browse help & FAQs</span>
+                            </div>
+                            <ChevronRightIcon className="size-4 text-[#9ca3af]" />
+                        </Button>
+                    )}
+                    {hasNews && (
+                        <Button
+                            className="h-12 w-full justify-between rounded-xl border-0 bg-white px-4 shadow-sm transition-shadow hover:shadow-md"
+                            variant="ghost"
+                            onClick={() => setScreen("news")}
+                            disabled={isPending}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="flex size-8 items-center justify-center rounded-lg bg-[#f3f4f6]">
+                                    <NewspaperIcon className="size-4 text-[#6b7280]" />
+                                </div>
+                                <span className="font-medium text-[#1f2937]">Latest news & updates</span>
                             </div>
                             <ChevronRightIcon className="size-4 text-[#9ca3af]" />
                         </Button>

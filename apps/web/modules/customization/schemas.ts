@@ -28,4 +28,14 @@ export const widgetSettingsSchema = z.object({
             })
         )
         .optional(),
+    news: z
+        .array(
+            z.object({
+                title: z.string().optional(),
+                description: z.string().optional(),
+                imageUrl: z.string().optional(),
+                link: z.string().optional(),
+            })
+        )
+        .optional(),
 })
