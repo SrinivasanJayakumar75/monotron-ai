@@ -71,6 +71,17 @@ export const CustomizationForm = ({
                 initialData?.faqs && initialData.faqs.length > 0
                     ? initialData.faqs
                     : [{ question: "", answer: "" }],
+            news:
+                initialData?.news && initialData.news.length > 0
+                    ? initialData.news
+                    : [
+                          {
+                              title: "",
+                              description: "",
+                              imageUrl: "",
+                              link: "",
+                          },
+                      ],
         }
     })
 
@@ -82,6 +93,11 @@ export const CustomizationForm = ({
     const faqsFields = useFieldArray({
         control: form.control,
         name: "faqs",
+    })
+
+    const newsFields = useFieldArray({
+        control: form.control,
+        name: "news",
     })
 
     const onSubmit = async(values: FormSchema) => {
@@ -121,6 +137,21 @@ export const CustomizationForm = ({
                         ?.map((f) => ({
                             question: f.question ?? "",
                             answer: f.answer ?? "",
+                        })) ?? [],
+                news:
+                    values.news
+                        ?.filter(
+                            (n) =>
+                                (n.title ?? "").trim() ||
+                                (n.description ?? "").trim() ||
+                                (n.imageUrl ?? "").trim() ||
+                                (n.link ?? "").trim()
+                        )
+                        ?.map((n) => ({
+                            title: n.title ?? "",
+                            description: n.description ?? "",
+                            imageUrl: n.imageUrl ?? "",
+                            link: n.link ?? "",
                         })) ?? [],
             });
 
@@ -196,6 +227,154 @@ export const CustomizationForm = ({
                                             </FormItem>
                                         )}
                                     />
+                                </div>
+
+                                <Separator />
+
+                                <div className="space-y-4">
+                                    <h3 className="mb-2 text-sm">
+                                        News
+                                    </h3>
+                                    <p className="mb-4 text-muted-foreground text-sm">
+                                        Announce product updates or important news with an optional image and link, shown in the widget&apos;s news center.
+                                    </p>
+                                    <div className="space-y-4">
+                                        {newsFields.fields.map(
+                                            (field, index) => (
+                                                <div
+                                                    key={field.id}
+                                                    className="flex items-start gap-4"
+                                                >
+                                                    <div className="flex-1 space-y-3">
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`news.${index}.title`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Title
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            {...field}
+                                                                            placeholder="e.g., New feature launch"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`news.${index}.description`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Description
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Textarea
+                                                                            {...field}
+                                                                            rows={3}
+                                                                            placeholder="Short summary of the update that visitors will see in the widget."
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`news.${index}.imageUrl`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Image URL
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            {...field}
+                                                                            placeholder="https://example.com/news-image.png"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormDescription>
+                                                                        Public image URL to display with this news item.
+                                                                    </FormDescription>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`news.${index}.link`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Optional link
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            {...field}
+                                                                            placeholder="https://example.com/blog/post"
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormDescription>
+                                                                        Where visitors should go to learn more (optional).
+                                                                    </FormDescription>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="mt-8 shrink-0 text-muted-foreground hover:text-destructive"
+                                                        onClick={() =>
+                                                            newsFields.remove(
+                                                                index
+                                                            )
+                                                        }
+                                                    >
+                                                        <Trash2Icon className="size-4" />
+                                                    </Button>
+                                                </div>
+                                            )
+                                        )}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                newsFields.append({
+                                                    title: "",
+                                                    description: "",
+                                                    imageUrl: "",
+                                                    link: "",
+                                                })
+                                            }
+                                        >
+                                            <PlusIcon className="mr-2 size-4" />
+                                            Add news item
+                                        </Button>
+                                    </div>
                                 </div>
 
                                 <Separator />

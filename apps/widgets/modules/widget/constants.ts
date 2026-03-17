@@ -7,6 +7,7 @@ export const WIDGET_SCREENS = [
     "inbox",
     "chat",
     "contact",
+    "news",
     "resources",
 ] as const;
 

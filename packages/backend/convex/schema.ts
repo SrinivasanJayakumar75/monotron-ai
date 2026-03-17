@@ -36,6 +36,16 @@ export default defineSchema({
                 })
             )
         ),
+        news: v.optional(
+            v.array(
+                v.object({
+                    title: v.string(),
+                    description: v.string(),
+                    imageUrl: v.string(),
+                    link: v.optional(v.string()),
+                })
+            )
+        ),
     })
     .index("by_organization_id", ["organizationId"]),
     plugins: defineTable({

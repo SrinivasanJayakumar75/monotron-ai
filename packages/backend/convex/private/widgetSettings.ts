@@ -30,6 +30,16 @@ export const upsert = mutation({
                 })
             )
         ),
+        news: v.optional(
+            v.array(
+                v.object({
+                    title: v.string(),
+                    description: v.string(),
+                    imageUrl: v.string(),
+                    link: v.optional(v.string()),
+                })
+            )
+        ),
     },
     handler: async (ctx, args) => {
          const identity = await ctx.auth.getUserIdentity();
@@ -61,6 +71,7 @@ export const upsert = mutation({
                 widgetColor: args.widgetColor,
                 blogLinks: args.blogLinks,
                 faqs: args.faqs,
+                news: args.news,
 
             });
         } else {
@@ -72,6 +83,7 @@ export const upsert = mutation({
                 widgetColor: args.widgetColor,
                 blogLinks: args.blogLinks,
                 faqs: args.faqs,
+                news: args.news,
             })
         }
         
