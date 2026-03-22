@@ -1,6 +1,15 @@
 (function () {
+    // next/script and other loaders often run this file after injection, so
+    // document.currentScript is null — fall back to the last matching tag.
     var script = document.currentScript;
     if (!script) {
+        var nodes = document.querySelectorAll("script[data-ingest-key][data-endpoint]");
+        script = nodes.length ? nodes[nodes.length - 1] : null;
+    }
+    if (!script) {
+        console.warn(
+            "[Monotron Analytics] No script tag with data-ingest-key and data-endpoint"
+        );
         return;
     }
     var ingestKey = script.getAttribute("data-ingest-key");
@@ -53,7 +62,17 @@
             body: payload(action),
             mode: "cors",
             keepalive: true,
-        }).catch(function () {});
+        })
+            .then(function (r) {
+                if (!r.ok) {
+                    return r.text().then(function (t) {
+                        try {
+                            console.warn("[Monotron Analytics] " + r.status + " " + t);
+                        } catch (e) {}
+                    });
+                }
+            })
+            .catch(function () {});
     }
 
     send("start");

@@ -52,6 +52,17 @@ function hostMatchesSite(originOrReferrerHost: string, siteDomain: string): bool
     return host === site || host.endsWith("." + site);
 }
 
+/** Lets you test from http://localhost without registering "localhost" as the site domain. */
+function isLocalDevHostname(host: string): boolean {
+    const h = host.replace(/^\[|\]$/g, "").toLowerCase();
+    return (
+        h === "localhost" ||
+        h === "127.0.0.1" ||
+        h === "::1" ||
+        host.toLowerCase() === "[::1]"
+    );
+}
+
 const http = httpRouter();
 
 http.route({
@@ -130,7 +141,11 @@ http.route({
                 originHost = null;
             }
         }
-        if (originHost && !hostMatchesSite(originHost, site.domain)) {
+        if (
+            originHost &&
+            !isLocalDevHostname(originHost) &&
+            !hostMatchesSite(originHost, site.domain)
+        ) {
             return new Response(JSON.stringify({ error: "Origin does not match registered domain" }), {
                 status: 403,
                 headers: { ...ANALYTICS_CORS_HEADERS, "Content-Type": "application/json" },
