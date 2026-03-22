@@ -96,4 +96,24 @@ export default defineSchema({
     users: defineTable({
         name: v.string(),
     }),
+
+    analyticsSites: defineTable({
+        organizationId: v.string(),
+        domain: v.string(),
+        ingestKey: v.string(),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_ingest_key", ["ingestKey"]),
+
+    analyticsSessions: defineTable({
+        siteId: v.id("analyticsSites"),
+        clientSessionId: v.string(),
+        startedAt: v.number(),
+        durationMs: v.number(),
+        country: v.optional(v.string()),
+        lastPath: v.optional(v.string()),
+    })
+        .index("by_site", ["siteId"])
+        .index("by_site_and_client_session", ["siteId", "clientSessionId"]),
 });

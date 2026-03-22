@@ -9,7 +9,154 @@ const clerkClient = createClerkClient({
     secretKey: process.env.CLERK_SECRET_KEY || "",
 })
 
+const ANALYTICS_CORS_HEADERS: Record<string, string> = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+};
+
+function clientIp(request: Request): string | null {
+    const cf = request.headers.get("cf-connecting-ip");
+    if (cf) {
+        return cf.trim();
+    }
+    const xff = request.headers.get("x-forwarded-for");
+    if (xff) {
+        return xff.split(",")[0]?.trim() ?? null;
+    }
+    return null;
+}
+
+async function countryFromIp(ip: string | null): Promise<string | undefined> {
+    if (!ip || ip === "127.0.0.1" || ip === "::1") {
+        return undefined;
+    }
+    try {
+        const res = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`);
+        if (!res.ok) {
+            return undefined;
+        }
+        const data = (await res.json()) as { country_code?: string; error?: boolean };
+        if (data.error || !data.country_code || typeof data.country_code !== "string") {
+            return undefined;
+        }
+        return data.country_code.toUpperCase();
+    } catch {
+        return undefined;
+    }
+}
+
+function hostMatchesSite(originOrReferrerHost: string, siteDomain: string): boolean {
+    const host = originOrReferrerHost.replace(/^www\./, "").toLowerCase();
+    const site = siteDomain.replace(/^www\./, "").toLowerCase();
+    return host === site || host.endsWith("." + site);
+}
+
 const http = httpRouter();
+
+http.route({
+    path: "/analytics/collect",
+    method: "OPTIONS",
+    handler: httpAction(async () => {
+        return new Response(null, { status: 204, headers: ANALYTICS_CORS_HEADERS });
+    }),
+});
+
+http.route({
+    path: "/analytics/collect",
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+        let body: {
+            ingestKey?: string;
+            clientSessionId?: string;
+            path?: string;
+            action?: string;
+            durationMs?: number;
+        };
+        try {
+            body = (await request.json()) as typeof body;
+        } catch {
+            return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+                status: 400,
+                headers: { ...ANALYTICS_CORS_HEADERS, "Content-Type": "application/json" },
+            });
+        }
+
+        const ingestKey = typeof body.ingestKey === "string" ? body.ingestKey : "";
+        const clientSessionId =
+            typeof body.clientSessionId === "string" ? body.clientSessionId : "";
+        const path = typeof body.path === "string" ? body.path : undefined;
+        const action =
+            body.action === "start" || body.action === "ping" || body.action === "end"
+                ? body.action
+                : null;
+        const durationMs =
+            typeof body.durationMs === "number" && Number.isFinite(body.durationMs)
+                ? body.durationMs
+                : 0;
+
+        if (!ingestKey || !clientSessionId || !action) {
+            return new Response(JSON.stringify({ error: "Missing fields" }), {
+                status: 400,
+                headers: { ...ANALYTICS_CORS_HEADERS, "Content-Type": "application/json" },
+            });
+        }
+
+        const site = await ctx.runQuery(internal.system.analyticsIngest.getSiteByIngestKey, {
+            ingestKey,
+        });
+
+        if (!site) {
+            return new Response(JSON.stringify({ error: "Unknown site key" }), {
+                status: 404,
+                headers: { ...ANALYTICS_CORS_HEADERS, "Content-Type": "application/json" },
+            });
+        }
+
+        const origin = request.headers.get("origin");
+        const referer = request.headers.get("referer");
+        let originHost: string | null = null;
+        if (origin) {
+            try {
+                originHost = new URL(origin).hostname;
+            } catch {
+                originHost = null;
+            }
+        }
+        if (!originHost && referer) {
+            try {
+                originHost = new URL(referer).hostname;
+            } catch {
+                originHost = null;
+            }
+        }
+        if (originHost && !hostMatchesSite(originHost, site.domain)) {
+            return new Response(JSON.stringify({ error: "Origin does not match registered domain" }), {
+                status: 403,
+                headers: { ...ANALYTICS_CORS_HEADERS, "Content-Type": "application/json" },
+            });
+        }
+
+        const country =
+            action === "start"
+                ? await countryFromIp(clientIp(request))
+                : undefined;
+
+        await ctx.runMutation(internal.system.analyticsIngest.ingest, {
+            ingestKey,
+            clientSessionId,
+            path,
+            action,
+            durationMs,
+            country,
+        });
+
+        return new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { ...ANALYTICS_CORS_HEADERS, "Content-Type": "application/json" },
+        });
+    }),
+});
 
 http.route({
     path: "/clerk-webhook",

@@ -10,6 +10,7 @@ import {CreditCardIcon,
     BrushIcon,
     MicVocalIcon,
     ChartBarIcon,
+    GlobeIcon,
 } from "lucide-react";
 
 import Image from "next/image";
@@ -40,6 +41,11 @@ const customerSupportItems = [
         title: "Knowledge Base",
         url: "/files",
         icon: AnchorIcon,
+    },
+    {
+        title: "Website analytics",
+        url: "/website-analytics",
+        icon: GlobeIcon,
     },
 
 ];
