@@ -331,6 +331,7 @@ export const WebsiteAnalyticsView = () => {
                                 <pre className="bg-muted mt-3 max-h-40 overflow-auto rounded-md p-4 font-mono text-xs break-all whitespace-pre-wrap">
                                     {embedSnippet || "Configure Convex URL and reload to generate the snippet."}
                                 </pre>
+                                
                             </div>
                         </div>
                     </>
