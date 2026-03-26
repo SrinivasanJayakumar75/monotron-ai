@@ -18,6 +18,7 @@ import {
 } from "@workspace/ui/components/dialog";
 import { useState } from "react";
 import { createScript } from "../../utils";
+import { GoogleIntegrationCard } from "../components/google-integration-card";
 
 
 export const IntegrationsView = () => {
@@ -78,6 +79,16 @@ export const IntegrationsView = () => {
                             Copy
                          </Button>
                     </div>
+                </div>
+                <Separator className="my-8"/>
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <Label>Email</Label>
+                        <p className="text-muted-foreground text-sm">
+                            Link Gmail for outbound messages (for example bulk sends from the dashboard).
+                        </p>
+                    </div>
+                    <GoogleIntegrationCard />
                 </div>
                 <Separator className="my-8"/>
                 <div className="space-y-6">

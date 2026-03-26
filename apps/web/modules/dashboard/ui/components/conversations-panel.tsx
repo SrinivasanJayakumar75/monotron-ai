@@ -52,14 +52,14 @@ export const ConversationsPanel =() =>{
 
 
     return (
-        <div className="flex h-full w-full flex-col bg-background text-sidebar-foreground">
-            <div className="flex flex-col gap-3.5 border-b p-2">
+        <div className="flex h-full w-full flex-col border-r border-slate-200/80 bg-white/80 text-slate-800 backdrop-blur">
+            <div className="flex flex-col gap-3.5 border-b border-slate-200/80 p-2">
                 <Select defaultValue="all"
                 onValueChange={(value)=>setStatusFilter(
                     value as "unresolved" | "escalated" | "resolved" | "all"
                 )}
                 value={statusFilter}>
-                    <SelectTrigger className="h-8 border-none px-1.5 shadow-none ring-0 hover:bg-accent hover:text-accent-foreground focus-visible:ring-0">
+                    <SelectTrigger className="h-8 border-none px-1.5 shadow-none ring-0 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-0">
                         <SelectValue placeholder="Filter"/>
                     </SelectTrigger>
                     <SelectContent>
@@ -111,13 +111,13 @@ export const ConversationsPanel =() =>{
                         <Link
                         key = {conversation._id}
                         className={cn(
-                            "relative flex cursor-pointer items-start gap-3 border-b p-4 py-5 text-sm leading-tight hover:bg-accent hover:text-accent-foreground",
+                            "relative flex cursor-pointer items-start gap-3 border-b border-slate-100 p-4 py-5 text-sm leading-tight hover:bg-slate-100/80",
                             pathname === `/conversations/${conversation._id}` && 
-                            "bg-accent text-accent-foreground"
+                            "bg-indigo-50 text-slate-900"
                         )}
                          href={`/conversations/${conversation._id}`}>
                             <div className={cn(
-                                "-translate-y-1/2 absolute top-1/2 left-0 h-[64%] w-1 rounded-r-full bg-neutral-300 opacity-0 transition-opacity",
+                                "-translate-y-1/2 absolute top-1/2 left-0 h-[64%] w-1 rounded-r-full bg-indigo-500 opacity-0 transition-opacity",
                                 pathname === `/conversations/${conversation._id}` && 
                                 "opacity-100"
                             )}/>
@@ -143,7 +143,7 @@ export const ConversationsPanel =() =>{
                                         )}
                                         <span className={cn(
                                             "line-clamp-1 text-muted-foreground text-xs",
-                                            !isLastMessageFromOperator && "font-bold text-black"
+                                            !isLastMessageFromOperator && "font-semibold text-slate-900"
                                         )}>
                                             {conversation.lastMessage?.text}
                                         </span>

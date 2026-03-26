@@ -5,6 +5,12 @@ import {Webhook} from "svix";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 
+function weakHash(s: string) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i);
+    return `h_${Math.abs(h)}`;
+}
+
 const clerkClient = createClerkClient({
     secretKey: process.env.CLERK_SECRET_KEY || "",
 })
@@ -219,6 +225,65 @@ http.route({
     })
 
 })
+
+http.route({
+    path: "/crm/webhooks/dispatch",
+    method: "POST",
+    handler: httpAction(async (ctx) => {
+        const events = await ctx.runQuery(internal.system.webhooks.listPending, {});
+        for (const event of events) {
+            const sub = await ctx.runQuery(internal.system.webhooks.getSubscription, {
+                subscriptionId: event.subscriptionId,
+            });
+            if (!sub || !sub.active) continue;
+            try {
+                await fetch(sub.url, {
+                    method: "POST",
+                    headers: {
+                        "content-type": "application/json",
+                        "x-crm-webhook-secret": sub.secret,
+                    },
+                    body: event.payload,
+                });
+                await ctx.runMutation(internal.system.webhooks.markStatus, {
+                    eventId: event._id,
+                    status: "sent",
+                });
+            } catch {
+                await ctx.runMutation(internal.system.webhooks.markStatus, {
+                    eventId: event._id,
+                    status: "failed",
+                });
+            }
+        }
+        return new Response(JSON.stringify({ ok: true, processed: events.length }), { status: 200 });
+    }),
+});
+
+http.route({
+    path: "/crm/api/export",
+    method: "GET",
+    handler: httpAction(async (ctx, request) => {
+        const rawKey = request.headers.get("x-api-key") ?? "";
+        if (!rawKey) return new Response("Missing API key", { status: 401 });
+        const keyHash = weakHash(rawKey);
+        const key = await ctx.runQuery(internal.system.apiKeys.findActiveByHash, { keyHash });
+        if (!key) return new Response("Invalid API key", { status: 401 });
+        const { leads, deals, activities } = await ctx.runQuery(
+            internal.system.crmExport.exportByOrganization,
+            { organizationId: key.organizationId },
+        );
+        return new Response(
+            JSON.stringify({
+                organizationId: key.organizationId,
+                leads,
+                deals,
+                activities,
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+        );
+    }),
+});
 
 async function validateRequest(req: Request): Promise<WebhookEvent | null>{
     const payloadString = await req.text();

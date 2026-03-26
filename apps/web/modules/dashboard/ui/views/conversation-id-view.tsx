@@ -32,6 +32,7 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import { DicebearAvatar } from "@workspace/ui/components/dicebear-avatar";
 import { ConversationStatusButton } from "../components/conversation-status-button";
+import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 import { Skeleton } from "@workspace/ui/components/skeleton";
@@ -94,6 +95,7 @@ export const ConversationIdView = ({
     }
 
     const createMessage = useMutation(api.private.messages.create); 
+    const createOrLinkLead = useMutation(api.private.conversations.createOrLinkLead);
 
     const onSubmit = async (values: z.infer<typeof formSchema>) =>{
         try{
@@ -144,12 +146,20 @@ export const ConversationIdView = ({
     }
 
     return (
-        <div className="flex h-full flex-col bg-muted">
-            <header className="flex items-center justify-between border-b bg-background p-2.5">
-                <Button size="sm"
-                variant="ghost">
-                    <MoreHorizontalIcon/>
-                </Button>
+        <div className="flex h-full flex-col bg-gradient-to-b from-slate-50 to-slate-100/60">
+            <header className="flex items-center justify-between border-b border-slate-200/80 bg-white/80 p-2.5 backdrop-blur">
+                <div className="flex items-center gap-2">
+                    <Button size="sm" variant="ghost">
+                        <MoreHorizontalIcon/>
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => createOrLinkLead({ conversationId })}
+                    >
+                        {conversation?.links?.length ? "Linked to CRM" : "Create CRM lead"}
+                    </Button>
+                </div>
                 {!!conversation && (
                     <ConversationStatusButton
                     onClick={handleToggleStatus}
@@ -157,6 +167,30 @@ export const ConversationIdView = ({
                     disabled={isUpdatingStatus}/>
                 )}
             </header>
+            {!!conversation?.links?.length && (
+                <div className="border-b border-slate-200/80 bg-indigo-50/50 px-3 py-2 text-xs text-slate-600">
+                    <span className="text-foreground/80 font-medium">Linked to CRM: </span>
+                    {conversation.links.map((l, index) => (
+                        <span key={l._id}>
+                            {index > 0 ? " · " : ""}
+                            {l.leadId ? (
+                                <Link
+                                    className="text-primary font-medium underline-offset-2 hover:underline"
+                                    href={`/crm/leads/${l.leadId}`}
+                                >
+                                    {l.leadName?.trim() ? l.leadName : "Lead"}
+                                </Link>
+                            ) : null}
+                            {l.leadId && l.activityId ? " — " : null}
+                            {l.activityId ? (
+                                <span className="text-muted-foreground">
+                                    {l.activitySubject?.trim() ? l.activitySubject : "Follow-up task"}
+                                </span>
+                            ) : null}
+                        </span>
+                    ))}
+                </div>
+            )}
             <AIConversation className="max-h-[calc(100vh-180px)]">
                 <AIConversationContent>
                     <InfiniteScrollTrigger
@@ -188,7 +222,7 @@ export const ConversationIdView = ({
                 <AIConversationScrollButton/>
 
             </AIConversation>
-            <div className="p-2">
+            <div className="border-t border-slate-200/80 bg-white/70 p-2 backdrop-blur">
                 <Form {...form}>
                     <AIInput onSubmit={form.handleSubmit(onSubmit)}>
                         <FormField control={form.control}
@@ -249,8 +283,8 @@ export const ConversationIdView = ({
 
 export const ConversationIdViewLoading = () => {
     return (
-        <div className="flex h-full flex-col bg-muted">
-            <header className="flex items-center justify-between border-b bg-background p-2.5">
+        <div className="flex h-full flex-col bg-gradient-to-b from-slate-50 to-slate-100/60">
+            <header className="flex items-center justify-between border-b border-slate-200/80 bg-white/80 p-2.5 backdrop-blur">
                 <Button disabled size="sm" variant="ghost">
                     <MoreHorizontalIcon/>
                 </Button>
@@ -274,7 +308,7 @@ export const ConversationIdViewLoading = () => {
                     })}
                 </AIConversationContent>
             </AIConversation>
-            <div className="p-2">
+            <div className="border-t border-slate-200/80 bg-white/70 p-2 backdrop-blur">
                 <AIInput>
                     <AIInputTextarea
                     disabled

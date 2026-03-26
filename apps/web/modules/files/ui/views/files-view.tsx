@@ -22,7 +22,6 @@ import type { PublicFile } from "@workspace/backend/private/files";
 import { Button } from "@workspace/ui/components/button";
 import { FileIcon, MoreHorizontalIcon, PlusIcon, TrashIcon } from "lucide-react";
 import { Badge } from "@workspace/ui/components/badge";
-import { file } from "zod/v4";
 import {useState} from "react";
 import {UploadDialog} from "../components/upload-dialog"
 import {DeleteFileDialog} from "../components/delete-file-dialog";
@@ -70,20 +69,21 @@ export const FilesView = () => {
         <UploadDialog
         onOpenChange={setUploadDialogOpen}
         open={uploadDialogOpen}/>
-        <div className="flex min-h-screen flex-col bg-muted p-8">
+        <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-indigo-50/30 p-8">
             <div className="mx-auto w-full max-w-screen-md">
                 <div className="space-y-2">
-                    <h1 className="text-2xl md:text-4xl">
+                    <h1 className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-2xl font-semibold text-transparent md:text-4xl">
                         Knowledge Base
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-slate-600">
                         Upload and manage documents for your AI assistant
                     </p>
 
                 </div>
-                <div className="mt-8 rounded-lg border bg-background">
-                    <div className="flex items-center justify-end border-b px-6 py-4">
+                <div className="mt-8 overflow-hidden rounded-xl border border-slate-200/80 bg-white/85 shadow-sm backdrop-blur">
+                    <div className="flex items-center justify-end border-b border-slate-200/80 px-6 py-4">
                         <Button 
+                        className="bg-indigo-600 text-white hover:bg-indigo-500"
                         onClick={() => setUploadDialogOpen(true)}>
                             <PlusIcon/>
                             Add New
@@ -129,7 +129,7 @@ export const FilesView = () => {
                                     }
 
                                     return files.results.map((file)=> (
-                                        <TableRow className="hover:bg-muted/50" key={file.id}>
+                                        <TableRow className="hover:bg-indigo-50/60" key={file.id}>
                                             <TableCell className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <FileIcon/>
@@ -137,7 +137,7 @@ export const FilesView = () => {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="px-6 py-4">
-                                                <Badge className="uppercase" variant="outline">
+                                                <Badge className="border-indigo-200 bg-indigo-50 uppercase text-indigo-700" variant="outline">
                                                     {file.type}
                                                 </Badge>
                                             </TableCell>
@@ -173,7 +173,7 @@ export const FilesView = () => {
                         </TableBody>
                     </Table>
                     {!isLoadingFirstPage && files.results.length >0 && (
-                        <div className="border-t">
+                        <div className="border-t border-slate-200/80 bg-white/60">
                             <InfiniteScrollTrigger
                             canLoadMore={canLoadMore}
                             isLoadingMore={isLoadingMore}

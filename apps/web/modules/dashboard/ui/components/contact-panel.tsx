@@ -18,10 +18,7 @@ import { useParams } from "next/navigation";
 import { useQuery} from "convex/react";
 import { useMemo} from "react";
 import {getCountryFromTimezone, getCountryFlagUrl}from "@/lib/country-utils";
-import { Button } from "@workspace/ui/components/button";
-import {ClockIcon, GlobeIcon, MailIcon, MonitorIcon, Section}from "lucide-react";
-import Link from "next/link";
-import { userAgent } from "next/server";
+import {ClockIcon, GlobeIcon, MonitorIcon}from "lucide-react";
 
 type InfoItem = {
     label: string;
@@ -203,12 +200,6 @@ if (contactSession === undefined || contactSession == null){
 
                     </div>
                 </div>
-                <Button asChild className="w-full" size="lg">
-                    <Link href={`mailto:${contactSession.email}`}>
-                    <MailIcon/>
-                    <span>Send Email</span>
-                    </Link>
-                </Button>
             </div>         
             <div>
                 {contactSession.metadata && (
