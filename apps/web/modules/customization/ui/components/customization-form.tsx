@@ -102,6 +102,42 @@ export const CustomizationForm = ({
 
     const onSubmit = async(values: FormSchema) => {
         try{
+            const normalizedBlogLinks: { title: string; url: string }[] =
+                (values.blogLinks ?? [])
+                    .map((b) => ({
+                        title: (b.title ?? "").trim(),
+                        url: (b.url ?? "").trim(),
+                    }))
+                    .filter((b) => b.title || b.url);
+
+            const normalizedFaqs: { question: string; answer: string }[] =
+                (values.faqs ?? [])
+                    .map((f) => ({
+                        question: (f.question ?? "").trim(),
+                        answer: (f.answer ?? "").trim(),
+                    }))
+                    .filter((f) => f.question || f.answer);
+
+            const normalizedNews: {
+                title: string;
+                description: string;
+                imageUrl: string;
+                link: string;
+            }[] = (values.news ?? [])
+                .map((n) => ({
+                    title: (n.title ?? "").trim(),
+                    description: (n.description ?? "").trim(),
+                    imageUrl: (n.imageUrl ?? "").trim(),
+                    link: (n.link ?? "").trim(),
+                }))
+                .filter(
+                    (n) =>
+                        n.title ||
+                        n.description ||
+                        n.imageUrl ||
+                        n.link
+                );
+
             const vapiSettings: WidgetSettings["vapiSettings"] = {
                 assistantId:
                 values.vapiSettings.assistantId === "none"
@@ -117,42 +153,9 @@ export const CustomizationForm = ({
                 defaultSuggestions: values.defaultSuggestions,
                 vapiSettings,
                 widgetColor: values.widgetColor,
-                blogLinks:
-                    values.blogLinks
-                        ?.filter(
-                            (b) =>
-                                (b.title ?? "").trim() || (b.url ?? "").trim()
-                        )
-                        ?.map((b) => ({
-                            title: b.title ?? "",
-                            url: b.url ?? "",
-                        })) ?? [],
-                faqs:
-                    values.faqs
-                        ?.filter(
-                            (f) =>
-                                (f.question ?? "").trim() ||
-                                (f.answer ?? "").trim()
-                        )
-                        ?.map((f) => ({
-                            question: f.question ?? "",
-                            answer: f.answer ?? "",
-                        })) ?? [],
-                news:
-                    values.news
-                        ?.filter(
-                            (n) =>
-                                (n.title ?? "").trim() ||
-                                (n.description ?? "").trim() ||
-                                (n.imageUrl ?? "").trim() ||
-                                (n.link ?? "").trim()
-                        )
-                        ?.map((n) => ({
-                            title: n.title ?? "",
-                            description: n.description ?? "",
-                            imageUrl: n.imageUrl ?? "",
-                            link: n.link ?? "",
-                        })) ?? [],
+                blogLinks: normalizedBlogLinks,
+                faqs: normalizedFaqs,
+                news: normalizedNews,
             });
 
             toast.success("Widget settings saved");

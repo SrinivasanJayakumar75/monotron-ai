@@ -54,7 +54,7 @@ export const WidgetNewsScreen = () => {
                         No news items have been configured yet.
                     </div>
                 ) : showNewsDetail && activeNews ? (
-                    <div className="flex flex-1 flex-col gap-y-3 rounded-xl bg-white p-4 shadow-sm">
+                    <div className="flex min-w-0 flex-1 flex-col gap-y-3 rounded-xl bg-white p-4 shadow-sm">
                         {activeNews.imageUrl && (
                             <div className="mb-2 overflow-hidden rounded-lg bg-[#f3f4f6]">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -65,11 +65,11 @@ export const WidgetNewsScreen = () => {
                                 />
                             </div>
                         )}
-                        <p className="text-sm font-semibold text-[#1f2937]">
+                        <p className="break-words text-sm font-semibold text-[#1f2937] [overflow-wrap:anywhere]">
                             {activeNews.title}
                         </p>
                         {activeNews.description && (
-                            <p className="whitespace-pre-line break-words text-sm text-[#6b7280]">
+                            <p className="whitespace-pre-line break-words text-sm text-[#6b7280] [overflow-wrap:anywhere]">
                                 {activeNews.description}
                             </p>
                         )}
@@ -116,14 +116,14 @@ export const WidgetNewsScreen = () => {
                                         <Button
                                             key={`${item.title}-${index}`}
                                             variant="ghost"
-                                            className="flex h-auto w-full justify-between rounded-xl border-0 bg-white p-3 text-left shadow-sm hover:shadow-md"
+                                            className="flex h-auto w-full min-w-0 justify-between overflow-hidden rounded-xl border-0 bg-white p-3 text-left shadow-sm hover:shadow-md"
                                             onClick={() =>
                                                 setActiveNewsIndex(index)
                                             }
                                         >
-                                            <div className="flex flex-1 items-center gap-3">
+                                            <div className="flex min-w-0 flex-1 items-center gap-3">
                                                 {item.imageUrl && (
-                                                    <div className="h-10 w-10 overflow-hidden rounded-md bg-[#f3f4f6]">
+                                                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-[#f3f4f6]">
                                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                                         <img
                                                             src={item.imageUrl}
@@ -132,12 +132,12 @@ export const WidgetNewsScreen = () => {
                                                         />
                                                     </div>
                                                 )}
-                                                <div className="flex-1 space-y-1">
-                                                    <p className="line-clamp-1 break-words text-sm font-medium text-[#111827]">
+                                                <div className="min-w-0 flex-1 space-y-1">
+                                                    <p className="line-clamp-1 break-words text-sm font-medium text-[#111827] [overflow-wrap:anywhere]">
                                                         {item.title || "News"}
                                                     </p>
                                                     {item.description && (
-                                                        <p className="line-clamp-2 break-words text-xs text-[#6b7280]">
+                                                        <p className="line-clamp-2 break-words text-xs text-[#6b7280] [overflow-wrap:anywhere]">
                                                             {item.description}
                                                         </p>
                                                     )}

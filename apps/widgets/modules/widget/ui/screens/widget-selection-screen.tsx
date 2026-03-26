@@ -4,7 +4,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { contactSessionIdAtomFamily, conversationIdAtom, errorMessageAtom, organizationIdAtom, screenAtom,widgetSettingsAtom,hasVapiSecretsAtom } from "../../atoms/widget-atoms";
 import { WidgetHeader } from "../components/widget-header";
 import { Button } from "@workspace/ui/components/button";
-import { ChevronRightIcon, MessageSquareTextIcon, MicIcon, PhoneIcon, BookOpenIcon, NewspaperIcon } from "lucide-react";
+import { ChevronRightIcon, MessageSquareTextIcon, MicIcon, BookOpenIcon, NewspaperIcon } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import { useState } from "react";
@@ -108,22 +108,6 @@ export const WidgetSelectionScreen = () => {
                                     <MicIcon className="size-4 text-[#6b7280]" />
                                 </div>
                                 <span className="font-medium text-[#1f2937]">Start voice call</span>
-                            </div>
-                            <ChevronRightIcon className="size-4 text-[#9ca3af]" />
-                        </Button>
-                    )}
-                    {hasVapiSecrets && widgetSettings?.vapiSettings?.phoneNumber && (
-                        <Button
-                            className="h-12 w-full justify-between rounded-xl border-0 bg-white px-4 shadow-sm transition-shadow hover:shadow-md"
-                            variant="ghost"
-                            onClick={() => setScreen("contact")}
-                            disabled={isPending}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="flex size-8 items-center justify-center rounded-lg bg-[#f3f4f6]">
-                                    <PhoneIcon className="size-4 text-[#6b7280]" />
-                                </div>
-                                <span className="font-medium text-[#1f2937]">Call us</span>
                             </div>
                             <ChevronRightIcon className="size-4 text-[#9ca3af]" />
                         </Button>

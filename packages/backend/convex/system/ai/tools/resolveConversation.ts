@@ -15,6 +15,9 @@ export const resolveConversation = createTool({
         await ctx.runMutation(internal.system.conversations.resolve, {
             threadId: ctx.threadId,
         });
+        await ctx.runMutation(internal.system.conversations.linkToLead, {
+            threadId: ctx.threadId,
+        });
 
         await supportAgent.saveMessage(ctx, {
             threadId: ctx.threadId,

@@ -60,6 +60,8 @@ export default defineSchema({
         threadId: v.string(),
         organizationId: v.string(),
         contactSessionId: v.id("contactSessions"),
+        assignedToUserId: v.optional(v.string()),
+        slaDueAt: v.optional(v.number()),
         status: v.union(
             v.literal("unresolved"),
             v.literal("escalated"),
@@ -93,6 +95,377 @@ export default defineSchema({
     })
     .index("by_organization_id", ["organizationId"])
     .index("by_expires_at", ["expiresAt"]),
+
+    // ----------------------------
+    // CRM (Zoho-like modules)
+    // ----------------------------
+    leads: defineTable({
+        organizationId: v.string(),
+        /** Display / lead name */
+        name: v.string(),
+        email: v.optional(v.string()),
+        phone: v.optional(v.string()),
+        company: v.optional(v.string()),
+        /** Pipeline status (simplified set). Legacy values may exist until migrated. */
+        stage: v.union(
+            v.literal("New"),
+            v.literal("Contacted"),
+            v.literal("Qualified"),
+            v.literal("Lost"),
+            v.literal("Proposal"),
+            v.literal("Negotiation"),
+            v.literal("Closed Won"),
+            v.literal("Closed Lost"),
+        ),
+        leadSource: v.optional(v.string()),
+        /** Street / multi-line address */
+        address: v.optional(v.string()),
+        /** Clerk user id when assigned to an org member */
+        assignedToUserId: v.optional(v.string()),
+        /** Display label for assigned rep (member name or free text) */
+        assignedToName: v.optional(v.string()),
+        /** Unix ms — last outreach / touch */
+        lastContactedAt: v.optional(v.number()),
+        leadScore: v.optional(v.number()),
+        expectedDealValue: v.optional(v.number()),
+        productInterest: v.optional(v.string()),
+        // Company (Zoho-style)
+        industry: v.optional(v.string()),
+        organizationOffer: v.optional(v.string()),
+        sellToDescription: v.optional(v.string()),
+        website: v.optional(v.string()),
+        g2CapterraNotes: v.optional(v.string()),
+        domainAge: v.optional(v.string()),
+        employeeCount: v.optional(v.string()),
+        // Person
+        salutation: v.optional(v.string()),
+        firstName: v.optional(v.string()),
+        lastName: v.optional(v.string()),
+        title: v.optional(v.string()),
+        linkedIn: v.optional(v.string()),
+        headline: v.optional(v.string()),
+        emailValidation: v.optional(v.string()),
+        zohoAssessmentCompleted: v.optional(v.boolean()),
+        linkedInConnections: v.optional(v.string()),
+        linkedInFollowers: v.optional(v.string()),
+        // Tracking / UTM
+        utmCampaign: v.optional(v.string()),
+        utmMedium: v.optional(v.string()),
+        referralUrl: v.optional(v.string()),
+        utmTerm: v.optional(v.string()),
+        utmContent: v.optional(v.string()),
+        ipAddress: v.optional(v.string()),
+        conversion: v.optional(v.string()),
+        referredOut: v.optional(v.boolean()),
+        /** User-defined field values keyed by `crmLeadCustomFields.key` (all string-encoded). */
+        customValues: v.optional(v.record(v.string(), v.string())),
+    }).index("by_organization_id", ["organizationId"])
+      .index("by_organization_id_and_stage", ["organizationId", "stage"]),
+
+    crmLeadCustomFields: defineTable({
+        organizationId: v.string(),
+        /** Stable id for storage in `leads.customValues` */
+        key: v.string(),
+        label: v.string(),
+        fieldType: v.union(
+            v.literal("text"),
+            v.literal("textarea"),
+            v.literal("number"),
+            v.literal("date"),
+            v.literal("select"),
+            v.literal("checkbox"),
+        ),
+        selectOptions: v.optional(v.array(v.string())),
+        required: v.boolean(),
+        sortOrder: v.number(),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_organization_id_and_key", ["organizationId", "key"]),
+
+    accounts: defineTable({
+        organizationId: v.string(),
+        name: v.string(),
+        website: v.optional(v.string()),
+        industry: v.optional(v.string()),
+        phone: v.optional(v.string()),
+        email: v.optional(v.string()),
+    }).index("by_organization_id", ["organizationId"]),
+
+    contacts: defineTable({
+        organizationId: v.string(),
+        accountId: v.optional(v.id("accounts")),
+        firstName: v.string(),
+        lastName: v.optional(v.string()),
+        email: v.optional(v.string()),
+        phone: v.optional(v.string()),
+        title: v.optional(v.string()),
+    }).index("by_organization_id", ["organizationId"])
+      .index("by_account_id", ["accountId"]),
+
+    deals: defineTable({
+        organizationId: v.string(),
+        accountId: v.optional(v.id("accounts")),
+        contactId: v.optional(v.id("contacts")),
+        leadId: v.optional(v.id("leads")),
+        name: v.string(),
+        amount: v.number(),
+        stage: v.union(
+            v.literal("Prospecting"),
+            v.literal("Qualification"),
+            v.literal("Proposal"),
+            v.literal("Negotiation"),
+            v.literal("Closed Won"),
+            v.literal("Closed Lost"),
+        ),
+        closeDate: v.optional(v.number()),
+        probability: v.optional(v.number()),
+    }).index("by_organization_id", ["organizationId"])
+      .index("by_organization_id_and_stage", ["organizationId", "stage"]),
+
+    activities: defineTable({
+        organizationId: v.string(),
+        type: v.union(
+            v.literal("task"),
+            v.literal("call"),
+            v.literal("email"),
+            v.literal("meeting"),
+        ),
+        subject: v.string(),
+        description: v.optional(v.string()),
+        dueAt: v.optional(v.number()),
+        status: v.union(
+            v.literal("open"),
+            v.literal("completed"),
+            v.literal("cancelled"),
+        ),
+        relatedLeadId: v.optional(v.id("leads")),
+        relatedDealId: v.optional(v.id("deals")),
+        relatedContactId: v.optional(v.id("contacts")),
+        relatedAccountId: v.optional(v.id("accounts")),
+        assignee: v.optional(v.string()),
+    }).index("by_organization_id", ["organizationId"])
+      .index("by_organization_id_and_type", ["organizationId", "type"]),
+
+    notes: defineTable({
+        organizationId: v.string(),
+        subject: v.optional(v.string()),
+        body: v.string(),
+        relatedLeadId: v.optional(v.id("leads")),
+        relatedDealId: v.optional(v.id("deals")),
+        relatedContactId: v.optional(v.id("contacts")),
+        relatedAccountId: v.optional(v.id("accounts")),
+    }).index("by_organization_id", ["organizationId"]),
+
+    campaigns: defineTable({
+        organizationId: v.string(),
+        name: v.string(),
+        status: v.union(
+            v.literal("planned"),
+            v.literal("active"),
+            v.literal("completed"),
+            v.literal("paused"),
+        ),
+        startAt: v.optional(v.number()),
+        endAt: v.optional(v.number()),
+        description: v.optional(v.string()),
+    }).index("by_organization_id", ["organizationId"]),
+
+    crmModuleItems: defineTable({
+        organizationId: v.string(),
+        module: v.union(
+            v.literal("products"),
+            v.literal("quotes"),
+            v.literal("orders"),
+            v.literal("invoices"),
+            v.literal("payments"),
+            v.literal("contracts"),
+            v.literal("documents"),
+            v.literal("webforms"),
+            v.literal("approvals"),
+            v.literal("automation"),
+            v.literal("integrations"),
+        ),
+        title: v.string(),
+        status: v.optional(v.string()),
+        amount: v.optional(v.number()),
+        dueAt: v.optional(v.number()),
+        details: v.optional(v.string()),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_organization_id_and_module", ["organizationId", "module"]),
+
+    crmSettings: defineTable({
+        organizationId: v.string(),
+        defaultCurrency: v.string(),
+        taxRate: v.number(),
+        fiscalYearStartMonth: v.number(),
+        autoNumbering: v.boolean(),
+        pipelineStages: v.optional(
+            v.array(
+                v.object({
+                    key: v.string(),
+                    label: v.string(),
+                    order: v.number(),
+                    probability: v.optional(v.number()),
+                }),
+            ),
+        ),
+    }).index("by_organization_id", ["organizationId"]),
+
+    crmUserRoles: defineTable({
+        organizationId: v.string(),
+        userId: v.string(),
+        role: v.union(v.literal("admin"), v.literal("agent"), v.literal("viewer")),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_organization_id_and_user_id", ["organizationId", "userId"]),
+
+    auditEvents: defineTable({
+        organizationId: v.string(),
+        userId: v.string(),
+        entityType: v.string(),
+        entityId: v.string(),
+        action: v.union(
+            v.literal("create"),
+            v.literal("update"),
+            v.literal("delete"),
+            v.literal("stage_change"),
+            v.literal("link"),
+            v.literal("status_change"),
+        ),
+        changes: v.optional(v.string()),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_organization_id_and_entity", ["organizationId", "entityType", "entityId"]),
+
+    crmConversationLinks: defineTable({
+        organizationId: v.string(),
+        conversationId: v.id("conversations"),
+        leadId: v.optional(v.id("leads")),
+        activityId: v.optional(v.id("activities")),
+        createdByUserId: v.string(),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_conversation_id", ["conversationId"]),
+
+    leadStageHistory: defineTable({
+        organizationId: v.string(),
+        leadId: v.id("leads"),
+        fromStage: v.optional(v.string()),
+        toStage: v.string(),
+        changedByUserId: v.string(),
+        changedAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_lead_id", ["leadId"]),
+
+    dealStageHistory: defineTable({
+        organizationId: v.string(),
+        dealId: v.id("deals"),
+        fromStage: v.optional(v.string()),
+        toStage: v.string(),
+        changedByUserId: v.string(),
+        changedAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_deal_id", ["dealId"]),
+
+    crmQueues: defineTable({
+        organizationId: v.string(),
+        name: v.string(),
+        isDefault: v.boolean(),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"]),
+
+    crmQueueMembers: defineTable({
+        organizationId: v.string(),
+        queueId: v.id("crmQueues"),
+        userId: v.string(),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_queue_id", ["queueId"]),
+
+    crmSlaPolicies: defineTable({
+        organizationId: v.string(),
+        firstResponseMinutes: v.number(),
+        resolveMinutes: v.number(),
+        businessHoursOnly: v.boolean(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    }).index("by_organization_id", ["organizationId"]),
+
+    crmGoogleConnections: defineTable({
+        organizationId: v.string(),
+        userId: v.string(),
+        email: v.optional(v.string()),
+        secretName: v.string(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_organization_id_and_user_id", ["organizationId", "userId"]),
+
+    crmWebhookSubscriptions: defineTable({
+        organizationId: v.string(),
+        url: v.string(),
+        secret: v.string(),
+        eventTypes: v.array(v.string()),
+        active: v.boolean(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    }).index("by_organization_id", ["organizationId"]),
+
+    crmWebhookEvents: defineTable({
+        organizationId: v.string(),
+        subscriptionId: v.id("crmWebhookSubscriptions"),
+        eventType: v.string(),
+        payload: v.string(),
+        status: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_subscription_id", ["subscriptionId"]),
+
+    crmApiKeys: defineTable({
+        organizationId: v.string(),
+        name: v.string(),
+        keyHash: v.string(),
+        scopes: v.array(v.string()),
+        active: v.boolean(),
+        createdAt: v.number(),
+    }).index("by_organization_id", ["organizationId"]),
+
+    customCrmModules: defineTable({
+        organizationId: v.string(),
+        name: v.string(),
+        slug: v.string(),
+        description: v.optional(v.string()),
+        color: v.optional(v.string()),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_organization_id_and_slug", ["organizationId", "slug"]),
+
+    customCrmRecords: defineTable({
+        organizationId: v.string(),
+        moduleId: v.id("customCrmModules"),
+        title: v.string(),
+        status: v.optional(v.string()),
+        amount: v.optional(v.number()),
+        dueAt: v.optional(v.number()),
+        details: v.optional(v.string()),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_module_id", ["moduleId"]),
     users: defineTable({
         name: v.string(),
     }),

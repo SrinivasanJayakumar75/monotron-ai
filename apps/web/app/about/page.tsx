@@ -51,7 +51,7 @@ const About = () => {
               About <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text text-transparent">Monotron</span>
             </h1>
             <p className="text-xl text-gray-700 leading-relaxed animate-fade-up" style={{ animationDelay: "0.1s" }}>
-              We're building something new. Monotron launched in December 2025 with a simple belief: the best solutions come from reimagining how things work from the ground up.
+              We&apos;re building something new. Monotron launched in December 2025 with a simple belief: the best solutions come from reimagining how things work from the ground up.
             </p>
           </div>
         </div>
@@ -68,17 +68,17 @@ const About = () => {
                   <h2 className="text-2xl font-bold">Where We Are Today</h2>
                 </div>
                 <p className="leading-relaxed opacity-95">
-                  We're still in our earliest days, refining our vision and laying the foundation for what's next. Right now, we're a small team focused on getting the details right before we scale.
+                  We&apos;re still in our earliest days, refining our vision and laying the foundation for what&apos;s next. Right now, we&apos;re a small team focused on getting the details right before we scale.
                 </p>
               </div>
 
               <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 <div className="flex items-center gap-3 mb-4">
                   <Rocket className="w-8 h-8" />
-                  <h2 className="text-2xl font-bold">What We're Working On</h2>
+                  <h2 className="text-2xl font-bold">What We&apos;re Working On</h2>
                 </div>
                 <p className="leading-relaxed opacity-95">
-                  We're in stealth mode for now, but we're excited about the problem we're solving. When we're ready to share more, you'll be among the first to know.
+                  We&apos;re in stealth mode for now, but we&apos;re excited about the problem we&apos;re solving. When we&apos;re ready to share more, you&apos;ll be among the first to know.
                 </p>
               </div>
 
@@ -88,7 +88,7 @@ const About = () => {
                   <h2 className="text-2xl font-bold">Why Monotron?</h2>
                 </div>
                 <p className="leading-relaxed opacity-95">
-                  The name reflects our philosophy: focused, singular, deliberate. We're not trying to be everything to everyone. We're building one thing exceptionally well.
+                  The name reflects our philosophy: focused, singular, deliberate. We&apos;re not trying to be everything to everyone. We&apos;re building one thing exceptionally well.
                 </p>
               </div>
             </div>
@@ -126,7 +126,7 @@ const About = () => {
                 <div className="text-5xl font-bold bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent mb-3">03</div>
                 <h3 className="text-xl font-semibold mb-3 text-gray-800">The Journey Ahead</h3>
                 <p className="text-gray-600">
-                  Our journey is just beginning. With each new feature, we're getting closer to our vision of making technology accessible to everyone.
+                  Our journey is just beginning. With each new feature, we&apos;re getting closer to our vision of making technology accessible to everyone.
                 </p>
               </div>
             </div>
@@ -172,7 +172,7 @@ const About = () => {
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">Join Us</h2>
             <p className="text-xl text-white/90 leading-relaxed mb-8">
-              If you're interested in what we're creating, stay tuned. We're just getting started, and the best is yet to come.
+              If you&apos;re interested in what we&apos;re creating, stay tuned. We&apos;re just getting started, and the best is yet to come.
             </p>
             <Link href="mailto:monotron.contact@gmail.com">
             <div className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white text-purple-600 font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">

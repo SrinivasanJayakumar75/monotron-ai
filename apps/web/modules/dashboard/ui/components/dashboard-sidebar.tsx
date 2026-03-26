@@ -2,20 +2,20 @@
 
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import {CreditCardIcon,
-    InboxIcon,
     ActivityIcon,
     AnchorIcon,
-    Mic,
-    PaletteIcon,
     BrushIcon,
     MicVocalIcon,
     ChartBarIcon,
     GlobeIcon,
+    WorkflowIcon,
+    MailsIcon,
+    ChevronRightIcon,
 } from "lucide-react";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
     Sidebar,
     SidebarContent,
@@ -37,6 +37,11 @@ const customerSupportItems = [
         url: "/conversations",
         icon: ChartBarIcon,
     },
+    {
+        title: "Bulk email",
+        url: "/bulk-email",
+        icon: MailsIcon,
+    },
         {
         title: "Knowledge Base",
         url: "/files",
@@ -48,6 +53,23 @@ const customerSupportItems = [
         icon: GlobeIcon,
     },
 
+];
+
+const crmModuleItems = [
+    { title: "Leads", url: "/crm/leads" },
+    { title: "Deals", url: "/crm/deals" },
+    { title: "Accounts", url: "/crm/accounts" },
+    { title: "Contacts", url: "/crm/contacts" },
+    { title: "Executive dashboard", url: "/dashboard" },
+    { title: "Tasks", url: "/crm/tasks" },
+    { title: "Events", url: "/crm/events" },
+    { title: "Emails", url: "/crm/emails" },
+    { title: "Calls", url: "/crm/calls" },
+    { title: "Products", url: "/crm/products" },
+    { title: "Orders", url: "/crm/orders" },
+    { title: "Quotes", url: "/crm/quotes" },
+    { title: "Payments", url: "/crm/payments" },
+    { title: "Invoices", url: "/crm/invoices" },
 ];
 
 const configurationItems = [
@@ -77,6 +99,7 @@ const accoutItems = [
 
 export const DashboardSidebar = () => {
     const pathname = usePathname();
+    const [isCrmMenuOpen, setIsCrmMenuOpen] = useState(false);
 
     const isActive = (url:string) => {
         if(url === "/"){
@@ -85,7 +108,7 @@ export const DashboardSidebar = () => {
         return pathname.startsWith(url);
     }
     return (
-        <Sidebar className="group [&_span]:!text-white [&_.sidebar-group-label]:!text-gray-300" collapsible="icon">
+        <Sidebar className="group border-r border-slate-800/70 bg-slate-950 [&_span]:!text-slate-200 [&_.sidebar-group-label]:!text-slate-400" collapsible="icon">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -122,17 +145,68 @@ export const DashboardSidebar = () => {
                                     isActive(item.url)
                                 }
                                 className={cn(
-                                    isActive(item.url) && "bg-gradient-to-b from-[#1a4d2e] to-[#0d3b21]! text-sidebar-primary-foreground! hover:to-[#0d3b21]/90!"
+                                    isActive(item.url) && "bg-gradient-to-r from-indigo-600 to-violet-600! text-white! shadow-sm"
                                 )}
                                  tooltip={item.title}>
                                     <Link href={item.url}>
-                                    <item.icon className="size-4 text-white"/>
+                                    <item.icon className="size-4 text-slate-200"/>
                                     <span>{item.title}</span>
                                     </Link>
 
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         ))}
+                    </SidebarMenu>
+                </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup>
+                <SidebarGroupLabel className="text-white">
+                    CRM
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                onClick={() => setIsCrmMenuOpen((v) => !v)}
+                                isActive={pathname.startsWith("/crm")}
+                                className={cn(
+                                    pathname.startsWith("/crm") &&
+                                        "bg-gradient-to-r from-indigo-600 to-violet-600! text-white! shadow-sm"
+                                )}
+                                tooltip="CRM modules"
+                            >
+                                <WorkflowIcon className="size-4 text-slate-200" />
+                                <span>CRM</span>
+                                <ChevronRightIcon
+                                    className={cn(
+                                        "ml-auto size-4 text-slate-300 transition-transform",
+                                        isCrmMenuOpen && "rotate-90"
+                                    )}
+                                />
+                            </SidebarMenuButton>
+                            <div
+                                className={cn(
+                                    "absolute top-full left-0 z-50 mt-1 w-[220px] rounded-md border border-slate-700 bg-slate-800 p-2 shadow-xl",
+                                    isCrmMenuOpen ? "block" : "hidden"
+                                )}
+                            >
+                                <div className="grid gap-0.5">
+                                    {crmModuleItems.map((item) => (
+                                        <Link
+                                            key={item.url}
+                                            href={item.url}
+                                            className={cn(
+                                                "block rounded-sm px-2 py-1.5 text-sm text-slate-200 hover:bg-slate-700",
+                                                pathname === item.url && "bg-indigo-600 text-white"
+                                            )}
+                                        >
+                                            {item.title}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarGroupContent>
             </SidebarGroup>
@@ -149,12 +223,12 @@ export const DashboardSidebar = () => {
                                     isActive(item.url)
                                 }
                                  className={cn(
-                                    isActive(item.url) && "bg-gradient-to-b from-[#1a4d2e] to-[#0d3b21]! text-sidebar-primary-foreground! hover:to-[#0d3b21]/90!"
+                                    isActive(item.url) && "bg-gradient-to-r from-indigo-600 to-violet-600! text-white! shadow-sm"
                                 )}
                                 
                                  tooltip={item.title}>
                                     <Link href={item.url}>
-                                    <item.icon className="size-4 text-white"/>
+                                    <item.icon className="size-4 text-slate-200"/>
                                     <span>{item.title}</span>
                                     </Link>
 
@@ -177,11 +251,11 @@ export const DashboardSidebar = () => {
                                     isActive(item.url)
                                 }
                                  className={cn(
-                                    isActive(item.url) && "bg-gradient-to-b from-[#1a4d2e] to-[#0d3b21]! text-sidebar-primary-foreground! hover:to-[#0d3b21]/90!"
+                                    isActive(item.url) && "bg-gradient-to-r from-indigo-600 to-violet-600! text-white! shadow-sm"
                                 )}
                                  tooltip={item.title}>
                                     <Link href={item.url}>
-                                    <item.icon className="size-4 text-white"/>
+                                    <item.icon className="size-4 text-slate-200"/>
                                     <span>{item.title}</span>
                                     </Link>
 
