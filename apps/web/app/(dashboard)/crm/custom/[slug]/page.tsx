@@ -1,7 +1,12 @@
 import { CustomModuleRecordsView } from "@/modules/crm/ui/views/custom-module-records-view";
 
-const Page = ({ params }: { params: { slug: string } }) => {
-    return <CustomModuleRecordsView slug={params.slug} />;
+const Page = async ({
+    params,
+}: {
+    params: Promise<{ slug: string }>;
+}) => {
+    const { slug } = await params;
+    return <CustomModuleRecordsView slug={slug} />;
 };
 
 export default Page;

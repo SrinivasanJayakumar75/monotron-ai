@@ -56,8 +56,8 @@ export function BulkEmailView() {
             setBody(t.body);
             return;
         }
-        const custom = (templates ?? []).find((t: any) => t.id === id);
-        if (custom?.subject && custom?.body) {
+        const custom = (templates ?? []).find((t) => t && t.id === id);
+        if (custom && "subject" in custom && "body" in custom && custom.subject && custom.body) {
             setSubject(custom.subject);
             setBody(custom.body);
         }

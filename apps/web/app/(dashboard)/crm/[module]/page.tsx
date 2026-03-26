@@ -27,14 +27,20 @@ function prettyModuleName(module: string): string {
     return map[module] ?? module.charAt(0).toUpperCase() + module.slice(1);
 }
 
-const Page = ({ params }: { params: { module: string } }) => {
-    if (params.module === "dashboards") {
+const Page = async ({
+    params,
+}: {
+    params: Promise<{ module: string }>;
+}) => {
+    const { module } = await params;
+
+    if (module === "dashboards") {
         redirect("/dashboard");
     }
-    if (REMOVED_CRM_MODULE_SLUGS.has(params.module)) {
+    if (REMOVED_CRM_MODULE_SLUGS.has(module)) {
         redirect("/crm");
     }
-    return <UnderConstructionView title={prettyModuleName(params.module)} />;
+    return <UnderConstructionView title={prettyModuleName(module)} />;
 };
 
 export default Page;

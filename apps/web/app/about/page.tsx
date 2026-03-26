@@ -75,7 +75,7 @@ const About = () => {
               <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 <div className="flex items-center gap-3 mb-4">
                   <Rocket className="w-8 h-8" />
-                  <h2 className="text-2xl font-bold">What We're Working On</h2>
+                  <h2 className="text-2xl font-bold">What We&apos;re Working On</h2>
                 </div>
                 <p className="leading-relaxed opacity-95">
                   We&apos;re in stealth mode for now, but we&apos;re excited about the problem we&apos;re solving. When we&apos;re ready to share more, you&apos;ll be among the first to know.
