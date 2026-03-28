@@ -16,6 +16,60 @@ const activityStatusValidator = v.union(
     v.literal("cancelled"),
 );
 
+export const listByLead = query({
+    args: { leadId: v.id("leads") },
+    handler: async (ctx, args) => {
+        const { orgId } = await requireCrmPermission(ctx, "read");
+        const lead = await ctx.db.get(args.leadId);
+        if (!lead || lead.organizationId !== orgId) {
+            return [];
+        }
+        const rows = await ctx.db
+            .query("activities")
+            .withIndex("by_related_lead_id", (q) => q.eq("relatedLeadId", args.leadId))
+            .collect();
+        return rows
+            .filter((a) => a.organizationId === orgId)
+            .sort((a, b) => b._creationTime - a._creationTime);
+    },
+});
+
+export const listByContact = query({
+    args: { contactId: v.id("contacts") },
+    handler: async (ctx, args) => {
+        const { orgId } = await requireCrmPermission(ctx, "read");
+        const contact = await ctx.db.get(args.contactId);
+        if (!contact || contact.organizationId !== orgId) {
+            return [];
+        }
+        const rows = await ctx.db
+            .query("activities")
+            .withIndex("by_related_contact_id", (q) => q.eq("relatedContactId", args.contactId))
+            .collect();
+        return rows
+            .filter((a) => a.organizationId === orgId)
+            .sort((a, b) => b._creationTime - a._creationTime);
+    },
+});
+
+export const listByAccount = query({
+    args: { accountId: v.id("accounts") },
+    handler: async (ctx, args) => {
+        const { orgId } = await requireCrmPermission(ctx, "read");
+        const account = await ctx.db.get(args.accountId);
+        if (!account || account.organizationId !== orgId) {
+            return [];
+        }
+        const rows = await ctx.db
+            .query("activities")
+            .withIndex("by_related_account_id", (q) => q.eq("relatedAccountId", args.accountId))
+            .collect();
+        return rows
+            .filter((a) => a.organizationId === orgId)
+            .sort((a, b) => b._creationTime - a._creationTime);
+    },
+});
+
 export const list = query({
     args: {
         type: v.optional(activityTypeValidator),

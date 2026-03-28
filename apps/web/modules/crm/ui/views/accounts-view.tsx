@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { api } from "@workspace/backend/_generated/api";
 import type { Doc, Id } from "@workspace/backend/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -17,13 +18,24 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@workspace/ui/components/select";
 import { Trash2Icon } from "lucide-react";
+import { CRM_ACTIVITY_TYPE_OPTIONS, type CrmActivityTypeValue } from "../crm-activity-constants";
 
 type Account = Doc<"accounts">;
 
 export const AccountsView = () => {
+    const { user } = useUser();
     const accounts = useQuery(api.private.accounts.list);
     const createAccount = useMutation(api.private.accounts.create);
+    const createActivity = useMutation(api.private.activities.create);
     const removeAccount = useMutation(api.private.accounts.remove);
     const importAccountsCsv = useMutation((api as any).private.accounts.importCsv);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -33,6 +45,10 @@ export const AccountsView = () => {
     const [industry, setIndustry] = useState("");
     const [phone, setPhone] = useState("");
     const [email, setEmail] = useState("");
+    const [activityType, setActivityType] = useState<CrmActivityTypeValue>("task");
+    const [activitySubject, setActivitySubject] = useState("");
+    const [activityDescription, setActivityDescription] = useState("");
+    const [activityDueDate, setActivityDueDate] = useState("");
     const [isCreating, setIsCreating] = useState(false);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [search, setSearch] = useState("");
@@ -111,18 +127,35 @@ export const AccountsView = () => {
 
         setIsCreating(true);
         try {
-            await createAccount({
+            const accountId = await createAccount({
                 name: trimmedName,
                 website: website.trim() || undefined,
                 industry: industry.trim() || undefined,
                 phone: phone.trim() || undefined,
                 email: email.trim() || undefined,
             });
+            const actSubject = activitySubject.trim();
+            if (actSubject) {
+                await createActivity({
+                    type: activityType,
+                    subject: actSubject,
+                    description: activityDescription.trim() || undefined,
+                    dueAt: activityDueDate
+                        ? new Date(`${activityDueDate}T12:00:00`).getTime()
+                        : undefined,
+                    relatedAccountId: accountId,
+                    assignee: user?.fullName || user?.primaryEmailAddress?.emailAddress || undefined,
+                });
+            }
             setName("");
             setWebsite("");
             setIndustry("");
             setPhone("");
             setEmail("");
+            setActivityType("task");
+            setActivitySubject("");
+            setActivityDescription("");
+            setActivityDueDate("");
             toast.success("Account created");
         } catch (e) {
             const message = e instanceof Error ? e.message : "Failed to create account";
@@ -234,6 +267,59 @@ export const AccountsView = () => {
                         <div className="space-y-1">
                             <Label>Email</Label>
                             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sales@acme.com" />
+                        </div>
+                        <div className="md:col-span-5 space-y-3 border-t border-slate-100 pt-4">
+                            <div>
+                                <p className="text-sm font-medium">Initial activity (optional)</p>
+                                <p className="text-muted-foreground text-xs">
+                                    Creates a CRM activity linked to this account when you add a subject.
+                                </p>
+                            </div>
+                            <div className="grid gap-4 md:grid-cols-5">
+                                <div className="space-y-1">
+                                    <Label>Activity type</Label>
+                                    <Select
+                                        value={activityType}
+                                        onValueChange={(v) => setActivityType(v as CrmActivityTypeValue)}
+                                    >
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {CRM_ACTIVITY_TYPE_OPTIONS.map((o) => (
+                                                <SelectItem key={o.value} value={o.value}>
+                                                    {o.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>Due date</Label>
+                                    <Input
+                                        type="date"
+                                        value={activityDueDate}
+                                        onChange={(e) => setActivityDueDate(e.target.value)}
+                                    />
+                                </div>
+                                <div className="md:col-span-3 space-y-1">
+                                    <Label>Subject</Label>
+                                    <Input
+                                        value={activitySubject}
+                                        onChange={(e) => setActivitySubject(e.target.value)}
+                                        placeholder="e.g. Schedule intro call"
+                                    />
+                                </div>
+                                <div className="md:col-span-5 space-y-1">
+                                    <Label>Description</Label>
+                                    <Textarea
+                                        value={activityDescription}
+                                        onChange={(e) => setActivityDescription(e.target.value)}
+                                        placeholder="Notes…"
+                                        rows={2}
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <div className="md:col-span-5 flex items-end">
                             <Button className="bg-indigo-600 text-white hover:bg-indigo-500" onClick={handleCreate} disabled={isCreating}>

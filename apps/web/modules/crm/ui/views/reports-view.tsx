@@ -10,9 +10,11 @@ import {
     TableHeader,
     TableRow,
 } from "@workspace/ui/components/table";
+import { useCrmCurrency } from "../../lib/use-crm-currency";
 
 export const ReportsView = () => {
     const report = useQuery(api.private.crmReports.getSummary, {});
+    const { formatMoney } = useCrmCurrency();
 
     return (
         <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-indigo-50/30 p-8">
@@ -25,15 +27,18 @@ export const ReportsView = () => {
                 <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
                     {report
                         ? [
-                              ["Leads", report.totals.leads],
-                              ["Deals", report.totals.deals],
-                              ["Contacts", report.totals.contacts],
-                              ["Accounts", report.totals.accounts],
-                              ["Activities", report.totals.activities],
-                              ["Campaigns", report.totals.campaigns],
-                              ["Total Deal Value", report.totals.totalDealValue],
-                              ["Won Deals", report.totals.wonDeals],
-                              ["Lost Deals", report.totals.lostDeals],
+                              ["Leads", String(report.totals.leads)],
+                              ["Deals", String(report.totals.deals)],
+                              ["Contacts", String(report.totals.contacts)],
+                              ["Accounts", String(report.totals.accounts)],
+                              ["Activities", String(report.totals.activities)],
+                              ["Campaigns", String(report.totals.campaigns)],
+                              [
+                                  "Total Deal Value",
+                                  formatMoney(report.totals.totalDealValue, { maximumFractionDigits: 0 }),
+                              ],
+                              ["Won Deals", String(report.totals.wonDeals)],
+                              ["Lost Deals", String(report.totals.lostDeals)],
                           ].map(([label, value]) => (
                               <div key={label} className="rounded-xl border border-slate-200/80 bg-white/90 p-6 shadow-sm">
                                   <p className="text-sm text-muted-foreground">{label}</p>

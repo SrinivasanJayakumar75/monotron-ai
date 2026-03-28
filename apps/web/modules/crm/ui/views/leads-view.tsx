@@ -42,6 +42,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@workspace/ui/components/dialog";
+import { useCrmCurrency } from "../../lib/use-crm-currency";
 
 type Lead = Doc<"leads">;
 
@@ -57,6 +58,7 @@ function escapeCsv(s: string) {
 }
 
 export const LeadsView = () => {
+    const { formatMoney } = useCrmCurrency();
     const leadsRaw = useQuery(api.private.leads.list, {});
     const bulkRemove = useMutation(api.private.leads.bulkRemove);
     const bulkAssign = useMutation(api.private.leads.bulkAssign);
@@ -256,6 +258,7 @@ export const LeadsView = () => {
             "Phone",
             "Lead Source",
             "Lead Status",
+            "Expected deal value",
             "Assigned To",
             "Created Date",
             "Last Contacted",
@@ -270,6 +273,11 @@ export const LeadsView = () => {
                     escapeCsv(l.phone ?? ""),
                     escapeCsv(formatLeadSourceLabel(l.leadSource)),
                     escapeCsv(displayLeadStatus(l.stage)),
+                    escapeCsv(
+                        l.expectedDealValue !== undefined && l.expectedDealValue !== null
+                            ? String(l.expectedDealValue)
+                            : "",
+                    ),
                     escapeCsv(l.assignedToName ?? ""),
                     escapeCsv(formatShortDate(leadCreatedAt(l))),
                     escapeCsv(formatShortDate(l.lastContactedAt)),
@@ -496,6 +504,7 @@ export const LeadsView = () => {
                                 <TableHead>Phone</TableHead>
                                 <TableHead>Lead source</TableHead>
                                 <TableHead>Lead status</TableHead>
+                                <TableHead className="text-right">Expected value</TableHead>
                                 <TableHead>Assigned to</TableHead>
                                 <TableHead>Created</TableHead>
                                 <TableHead>Last contacted</TableHead>
@@ -504,13 +513,13 @@ export const LeadsView = () => {
                         <TableBody>
                             {leadsRaw === undefined ? (
                                 <TableRow>
-                                    <TableCell colSpan={10} className="text-muted-foreground py-10 text-center">
+                                    <TableCell colSpan={11} className="text-muted-foreground py-10 text-center">
                                         Loading…
                                     </TableCell>
                                 </TableRow>
                             ) : filteredSorted.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={10} className="text-muted-foreground py-10 text-center">
+                                    <TableCell colSpan={11} className="text-muted-foreground py-10 text-center">
                                         No leads match your filters.
                                     </TableCell>
                                 </TableRow>
@@ -546,6 +555,9 @@ export const LeadsView = () => {
                                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">
                                                 {displayLeadStatus(lead.stage)}
                                             </span>
+                                        </TableCell>
+                                        <TableCell className="text-right text-sm tabular-nums">
+                                            {formatMoney(lead.expectedDealValue)}
                                         </TableCell>
                                         <TableCell className="text-sm">{lead.assignedToName ?? "—"}</TableCell>
                                         <TableCell className="text-muted-foreground text-sm">

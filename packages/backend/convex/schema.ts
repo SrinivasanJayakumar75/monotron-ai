@@ -245,7 +245,10 @@ export default defineSchema({
         relatedAccountId: v.optional(v.id("accounts")),
         assignee: v.optional(v.string()),
     }).index("by_organization_id", ["organizationId"])
-      .index("by_organization_id_and_type", ["organizationId", "type"]),
+      .index("by_organization_id_and_type", ["organizationId", "type"])
+      .index("by_related_lead_id", ["relatedLeadId"])
+      .index("by_related_contact_id", ["relatedContactId"])
+      .index("by_related_account_id", ["relatedAccountId"]),
 
     notes: defineTable({
         organizationId: v.string(),

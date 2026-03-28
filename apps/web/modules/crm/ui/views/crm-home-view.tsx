@@ -12,6 +12,7 @@ import {
     CardTitle,
 } from "@workspace/ui/components/card";
 import { Building2Icon, CalendarIcon, MailIcon, PhoneIcon, SettingsIcon, UsersIcon, ActivityIcon, ClipboardListIcon, FileTextIcon, ReceiptIcon, LayersIcon, ShieldCheckIcon, SparklesIcon } from "lucide-react";
+import { useCrmCurrency } from "../../lib/use-crm-currency";
 
 type CrmModule = {
     title: string;
@@ -101,6 +102,7 @@ const modules: CrmModule[] = [
 
 export const CrmHomeView = () => {
     const report = useQuery(api.private.crmReports.getSummary, {});
+    const { formatMoney, settingsLoading } = useCrmCurrency();
     const spotlight = modules.slice(0, 8);
     const allModules = modules;
 
@@ -133,7 +135,11 @@ export const CrmHomeView = () => {
                     <Card className="border-emerald-100 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
                         <CardHeader className="pb-2">
                             <CardDescription className="text-emerald-100">Pipeline Value</CardDescription>
-                            <CardTitle className="text-2xl">{report?.totals.totalDealValue ?? "—"}</CardTitle>
+                            <CardTitle className="text-2xl">
+                                {report === undefined || settingsLoading
+                                    ? "—"
+                                    : formatMoney(report.totals.totalDealValue, { maximumFractionDigits: 0 })}
+                            </CardTitle>
                         </CardHeader>
                     </Card>
                     <Card className="border-cyan-100 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white">

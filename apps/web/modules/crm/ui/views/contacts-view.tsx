@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { api } from "@workspace/backend/_generated/api";
 import type { Doc, Id } from "@workspace/backend/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
 import {
     Table,
     TableBody,
@@ -25,14 +27,17 @@ import {
     SelectValue,
 } from "@workspace/ui/components/select";
 import { Trash2Icon } from "lucide-react";
+import { CRM_ACTIVITY_TYPE_OPTIONS, type CrmActivityTypeValue } from "../crm-activity-constants";
 
 type Contact = Doc<"contacts">;
 type Account = Doc<"accounts">;
 
 export const ContactsView = () => {
+    const { user } = useUser();
     const contacts = useQuery(api.private.contacts.list, {});
     const accounts = useQuery(api.private.accounts.list);
     const createContact = useMutation(api.private.contacts.create);
+    const createActivity = useMutation(api.private.activities.create);
     const removeContact = useMutation(api.private.contacts.remove);
     const importContactsCsv = useMutation((api as any).private.contacts.importCsv);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -43,6 +48,10 @@ export const ContactsView = () => {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [title, setTitle] = useState("");
+    const [activityType, setActivityType] = useState<CrmActivityTypeValue>("task");
+    const [activitySubject, setActivitySubject] = useState("");
+    const [activityDescription, setActivityDescription] = useState("");
+    const [activityDueDate, setActivityDueDate] = useState("");
     const [isCreating, setIsCreating] = useState(false);
     const [search, setSearch] = useState("");
     const [filterAccount, setFilterAccount] = useState("all");
@@ -133,7 +142,7 @@ export const ContactsView = () => {
 
         setIsCreating(true);
         try {
-            await createContact({
+            const contactId = await createContact({
                 accountId: accountId === "none" ? undefined : (accountId as Id<"accounts">),
                 firstName: trimmedFirst,
                 lastName: lastName.trim() || undefined,
@@ -141,12 +150,29 @@ export const ContactsView = () => {
                 phone: phone.trim() || undefined,
                 title: title.trim() || undefined,
             });
+            const actSubject = activitySubject.trim();
+            if (actSubject) {
+                await createActivity({
+                    type: activityType,
+                    subject: actSubject,
+                    description: activityDescription.trim() || undefined,
+                    dueAt: activityDueDate
+                        ? new Date(`${activityDueDate}T12:00:00`).getTime()
+                        : undefined,
+                    relatedContactId: contactId,
+                    assignee: user?.fullName || user?.primaryEmailAddress?.emailAddress || undefined,
+                });
+            }
             setAccountId("none");
             setFirstName("");
             setLastName("");
             setEmail("");
             setPhone("");
             setTitle("");
+            setActivityType("task");
+            setActivitySubject("");
+            setActivityDescription("");
+            setActivityDueDate("");
             toast.success("Contact created");
         } catch (e) {
             const message = e instanceof Error ? e.message : "Failed to create contact";
@@ -289,6 +315,60 @@ export const ContactsView = () => {
                         <div className="space-y-1 md:col-span-2">
                             <Label>Title</Label>
                             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Sales Lead" />
+                        </div>
+
+                        <div className="md:col-span-6 space-y-3 border-t border-slate-100 pt-4">
+                            <div>
+                                <p className="text-sm font-medium">Initial activity (optional)</p>
+                                <p className="text-muted-foreground text-xs">
+                                    Creates a CRM activity linked to this contact when you add a subject.
+                                </p>
+                            </div>
+                            <div className="grid gap-4 md:grid-cols-6">
+                                <div className="space-y-1">
+                                    <Label>Activity type</Label>
+                                    <Select
+                                        value={activityType}
+                                        onValueChange={(v) => setActivityType(v as CrmActivityTypeValue)}
+                                    >
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {CRM_ACTIVITY_TYPE_OPTIONS.map((o) => (
+                                                <SelectItem key={o.value} value={o.value}>
+                                                    {o.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>Due date</Label>
+                                    <Input
+                                        type="date"
+                                        value={activityDueDate}
+                                        onChange={(e) => setActivityDueDate(e.target.value)}
+                                    />
+                                </div>
+                                <div className="md:col-span-4 space-y-1">
+                                    <Label>Subject</Label>
+                                    <Input
+                                        value={activitySubject}
+                                        onChange={(e) => setActivitySubject(e.target.value)}
+                                        placeholder="e.g. Send welcome email"
+                                    />
+                                </div>
+                                <div className="md:col-span-6 space-y-1">
+                                    <Label>Description</Label>
+                                    <Textarea
+                                        value={activityDescription}
+                                        onChange={(e) => setActivityDescription(e.target.value)}
+                                        placeholder="Notes…"
+                                        rows={2}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <div className="md:col-span-6 flex items-end">

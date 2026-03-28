@@ -27,6 +27,7 @@ import {
     storedSourceToSelect,
     type PrimaryLeadStatus,
 } from "../leads-ui-constants";
+import { useCrmCurrency } from "../../lib/use-crm-currency";
 
 const ASSIGNEE_NONE = "__assign_none__";
 const ASSIGNEE_ME = "__me__";
@@ -59,6 +60,7 @@ export const EditLeadView = () => {
     const upsertLeadAssociation = useMutation((api as any).private.leadAssociations.upsert);
     const accounts = useQuery(api.private.accounts.list);
     const contacts = useQuery(api.private.contacts.list, {});
+    const { currency } = useCrmCurrency();
     const { user } = useUser();
     const { memberships } = useOrganization({
         memberships: {
@@ -327,7 +329,7 @@ export const EditLeadView = () => {
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label>Expected deal value (USD)</Label>
+                            <Label>Expected deal value ({currency})</Label>
                             <Input
                                 inputMode="decimal"
                                 value={expectedDealValue}

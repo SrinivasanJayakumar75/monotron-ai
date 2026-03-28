@@ -39,6 +39,7 @@ import {
     SelectValue,
 } from "@workspace/ui/components/select";
 import { cn } from "@workspace/ui/lib/utils";
+import { formatCrmMoney, normalizeCrmCurrencyCode } from "@/modules/crm/lib/crm-currency";
 import { LEAD_SOURCE_OPTIONS } from "@/modules/crm/ui/leads-ui-constants";
 
 /** Power BI–style accent palette */
@@ -60,14 +61,6 @@ function formatSourceLabel(key: string) {
     if (key === "Unknown") return "Unknown";
     const o = LEAD_SOURCE_OPTIONS.find((x) => x.value === key);
     return o?.label ?? key;
-}
-
-function formatCurrency(n: number) {
-    return new Intl.NumberFormat(undefined, {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0,
-    }).format(n);
 }
 
 function VisualChrome({
@@ -144,10 +137,16 @@ export const BiDashboardView = () => {
     const [leadSourceFilter, setLeadSourceFilter] = useState<string>("all");
     const [dealStageFilter, setDealStageFilter] = useState<string>("all");
     const [refreshNonce, setRefreshNonce] = useState(0);
+    const crmSettings = useQuery(api.private.crmSettings.getOne, {});
     const data = useQuery(api.private.crmReports.getDashboardAnalytics, {
         monthsBack,
         refreshNonce,
     });
+
+    const formatCurrency = useMemo(() => {
+        const currency = normalizeCrmCurrencyCode(crmSettings?.defaultCurrency);
+        return (n: number) => formatCrmMoney(n, currency, { maximumFractionDigits: 0 });
+    }, [crmSettings?.defaultCurrency]);
 
     const pieSourceData = useMemo(() => {
         if (!data?.leadsBySource?.length) return [];
@@ -211,7 +210,7 @@ export const BiDashboardView = () => {
                                 Executive report
                             </h1>
                             <p className="text-muted-foreground text-xs md:text-sm">
-                                Power BI–style workspace · CRM & pipeline analytics
+                                CRM & pipeline analytics
                             </p>
                         </div>
                     </div>

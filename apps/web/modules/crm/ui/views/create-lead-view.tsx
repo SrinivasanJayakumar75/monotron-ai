@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { Textarea } from "@workspace/ui/components/textarea";
 import {
     Select,
     SelectContent,
@@ -26,6 +27,8 @@ import {
     sourceSelectToStored,
     storedSourceToSelect,
 } from "../leads-ui-constants";
+import { CRM_ACTIVITY_TYPE_OPTIONS, type CrmActivityTypeValue } from "../crm-activity-constants";
+import { useCrmCurrency } from "../../lib/use-crm-currency";
 
 const ASSIGNEE_NONE = "__assign_none__";
 const ASSIGNEE_ME = "__me__";
@@ -41,19 +44,32 @@ export const CreateLeadView = () => {
     });
 
     const createLead = useMutation(api.private.leads.create);
+    const createActivity = useMutation(api.private.activities.create);
     const upsertLeadAssociation = useMutation((api as any).private.leadAssociations.upsert);
     const accounts = useQuery(api.private.accounts.list);
     const contacts = useQuery(api.private.contacts.list, {});
+    const { currency } = useCrmCurrency();
 
     const [name, setName] = useState("");
     const [company, setCompany] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
+    const [website, setWebsite] = useState("");
+    const [address, setAddress] = useState("");
+    const [industry, setIndustry] = useState("");
+    const [leadScore, setLeadScore] = useState("");
+    const [expectedDealValue, setExpectedDealValue] = useState("");
+    const [productInterest, setProductInterest] = useState("");
+    const [lastContactedLocal, setLastContactedLocal] = useState("");
     const [leadSource, setLeadSource] = useState(storedSourceToSelect(undefined));
     const [stage, setStage] = useState<(typeof LEAD_STATUS_OPTIONS)[number]["value"]>("New");
     const [assigneeKey, setAssigneeKey] = useState(ASSIGNEE_NONE);
     const [associatedAccountId, setAssociatedAccountId] = useState<string>("none");
     const [associatedContactId, setAssociatedContactId] = useState<string>("none");
+    const [activityType, setActivityType] = useState<CrmActivityTypeValue>("task");
+    const [activitySubject, setActivitySubject] = useState("");
+    const [activityDescription, setActivityDescription] = useState("");
+    const [activityDueDate, setActivityDueDate] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
     const memberOptions = useMemo(() => {
@@ -86,6 +102,33 @@ export const CreateLeadView = () => {
             toast.error("Lead name is required");
             return;
         }
+        let parsedLeadScore: number | undefined;
+        if (leadScore.trim()) {
+            const n = Number.parseInt(leadScore, 10);
+            if (Number.isNaN(n)) {
+                toast.error("Lead score must be a whole number");
+                return;
+            }
+            parsedLeadScore = n;
+        }
+        let parsedExpectedValue: number | undefined;
+        if (expectedDealValue.trim()) {
+            const n = Number.parseFloat(expectedDealValue);
+            if (Number.isNaN(n)) {
+                toast.error("Expected deal value must be a number");
+                return;
+            }
+            parsedExpectedValue = n;
+        }
+        let lastContactedAt: number | undefined;
+        if (lastContactedLocal.trim()) {
+            const ts = new Date(lastContactedLocal).getTime();
+            if (Number.isNaN(ts)) {
+                toast.error("Last contacted date is invalid");
+                return;
+            }
+            lastContactedAt = ts;
+        }
         const { userId, name: aname } = resolveAssignee();
         setSubmitting(true);
         try {
@@ -94,6 +137,13 @@ export const CreateLeadView = () => {
                 company: company.trim() || undefined,
                 email: email.trim() || undefined,
                 phone: phone.trim() || undefined,
+                website: website.trim() || undefined,
+                address: address.trim() || undefined,
+                industry: industry.trim() || undefined,
+                leadScore: parsedLeadScore,
+                expectedDealValue: parsedExpectedValue,
+                productInterest: productInterest.trim() || undefined,
+                lastContactedAt,
                 leadSource: sourceSelectToStored(leadSource),
                 stage,
                 assignedToUserId: userId,
@@ -104,6 +154,23 @@ export const CreateLeadView = () => {
                 accountId: associatedAccountId === "none" ? undefined : (associatedAccountId as Id<"accounts">),
                 contactId: associatedContactId === "none" ? undefined : (associatedContactId as Id<"contacts">),
             });
+            const actSubject = activitySubject.trim();
+            if (actSubject) {
+                await createActivity({
+                    type: activityType,
+                    subject: actSubject,
+                    description: activityDescription.trim() || undefined,
+                    dueAt: activityDueDate
+                        ? new Date(`${activityDueDate}T12:00:00`).getTime()
+                        : undefined,
+                    relatedLeadId: leadId,
+                    assignee: user?.fullName || user?.primaryEmailAddress?.emailAddress || undefined,
+                });
+            }
+            setActivityType("task");
+            setActivitySubject("");
+            setActivityDescription("");
+            setActivityDueDate("");
             toast.success("Lead created");
             router.push("/crm/leads");
         } catch (e) {
@@ -159,6 +226,70 @@ export const CreateLeadView = () => {
                             <Label>Phone</Label>
                             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
                         </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1">
+                            <Label>Website</Label>
+                            <Input
+                                value={website}
+                                onChange={(e) => setWebsite(e.target.value)}
+                                placeholder="https://example.com"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label>Industry</Label>
+                            <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="e.g. Technology" />
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <Label>Address</Label>
+                        <Textarea
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            placeholder="Street, city, region, postal code"
+                            rows={3}
+                        />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1">
+                            <Label>Lead score</Label>
+                            <Input
+                                type="number"
+                                min={0}
+                                value={leadScore}
+                                onChange={(e) => setLeadScore(e.target.value)}
+                                placeholder="e.g. 50"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label>Expected deal value ({currency})</Label>
+                            <Input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                value={expectedDealValue}
+                                onChange={(e) => setExpectedDealValue(e.target.value)}
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-1 max-w-md">
+                        <Label>Last contacted</Label>
+                        <Input
+                            type="datetime-local"
+                            value={lastContactedLocal}
+                            onChange={(e) => setLastContactedLocal(e.target.value)}
+                        />
+                        <p className="text-muted-foreground text-xs">Optional. Stored using your browser&apos;s local date and time.</p>
+                    </div>
+                    <div className="space-y-1">
+                        <Label>Product interest</Label>
+                        <Textarea
+                            value={productInterest}
+                            onChange={(e) => setProductInterest(e.target.value)}
+                            placeholder="Products or services this lead is interested in"
+                            rows={3}
+                        />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-1">
@@ -252,6 +383,57 @@ export const CreateLeadView = () => {
                         <p className="text-muted-foreground text-xs">
                             Created date is set automatically when you save.
                         </p>
+                    </div>
+
+                    <div className="space-y-4 border-t pt-6">
+                        <div>
+                            <h3 className="text-sm font-medium">Initial activity (optional)</h3>
+                            <p className="text-muted-foreground text-xs">
+                                Add a follow-up task, call, email, or meeting linked to this lead.
+                            </p>
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1">
+                                <Label>Type</Label>
+                                <Select value={activityType} onValueChange={(v) => setActivityType(v as CrmActivityTypeValue)}>
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {CRM_ACTIVITY_TYPE_OPTIONS.map((o) => (
+                                            <SelectItem key={o.value} value={o.value}>
+                                                {o.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1">
+                                <Label>Due date</Label>
+                                <Input
+                                    type="date"
+                                    value={activityDueDate}
+                                    onChange={(e) => setActivityDueDate(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <Label>Subject</Label>
+                            <Input
+                                value={activitySubject}
+                                onChange={(e) => setActivitySubject(e.target.value)}
+                                placeholder="e.g. Follow up on demo request"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label>Description</Label>
+                            <Textarea
+                                value={activityDescription}
+                                onChange={(e) => setActivityDescription(e.target.value)}
+                                placeholder="Notes or details…"
+                                rows={3}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

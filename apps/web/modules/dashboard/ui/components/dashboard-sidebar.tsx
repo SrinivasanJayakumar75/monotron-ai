@@ -70,6 +70,7 @@ const crmModuleItems = [
     { title: "Quotes", url: "/crm/quotes" },
     { title: "Payments", url: "/crm/payments" },
     { title: "Invoices", url: "/crm/invoices" },
+    { title: "CRM settings", url: "/crm/settings" },
 ];
 
 const configurationItems = [
@@ -108,7 +109,7 @@ export const DashboardSidebar = () => {
         return pathname.startsWith(url);
     }
     return (
-        <Sidebar className="group border-r border-slate-800/70 bg-slate-950 [&_span]:!text-slate-200 [&_.sidebar-group-label]:!text-slate-400" collapsible="icon">
+        <Sidebar className="group border-r border-sidebar-border bg-sidebar text-sidebar-foreground" collapsible="icon">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -133,7 +134,7 @@ export const DashboardSidebar = () => {
             </SidebarHeader>
            <SidebarContent>
             <SidebarGroup>
-                <SidebarGroupLabel className="text-white">
+                <SidebarGroupLabel className="text-sidebar-foreground/70">
                     Customer Support
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -145,11 +146,11 @@ export const DashboardSidebar = () => {
                                     isActive(item.url)
                                 }
                                 className={cn(
-                                    isActive(item.url) && "bg-gradient-to-r from-indigo-600 to-violet-600! text-white! shadow-sm"
+                                    isActive(item.url) && "bg-sidebar-primary! text-sidebar-primary-foreground! shadow-sm"
                                 )}
                                  tooltip={item.title}>
                                     <Link href={item.url}>
-                                    <item.icon className="size-4 text-slate-200"/>
+                                    <item.icon className="size-4"/>
                                     <span>{item.title}</span>
                                     </Link>
 
@@ -161,7 +162,7 @@ export const DashboardSidebar = () => {
             </SidebarGroup>
 
             <SidebarGroup>
-                <SidebarGroupLabel className="text-white">
+                <SidebarGroupLabel className="text-sidebar-foreground/70">
                     CRM
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -172,22 +173,22 @@ export const DashboardSidebar = () => {
                                 isActive={pathname.startsWith("/crm")}
                                 className={cn(
                                     pathname.startsWith("/crm") &&
-                                        "bg-gradient-to-r from-indigo-600 to-violet-600! text-white! shadow-sm"
+                                        "bg-sidebar-primary! text-sidebar-primary-foreground! shadow-sm"
                                 )}
                                 tooltip="CRM modules"
                             >
-                                <WorkflowIcon className="size-4 text-slate-200" />
+                                <WorkflowIcon className="size-4" />
                                 <span>CRM</span>
                                 <ChevronRightIcon
                                     className={cn(
-                                        "ml-auto size-4 text-slate-300 transition-transform",
+                                        "ml-auto size-4 text-sidebar-foreground/70 transition-transform",
                                         isCrmMenuOpen && "rotate-90"
                                     )}
                                 />
                             </SidebarMenuButton>
                             <div
                                 className={cn(
-                                    "absolute top-full left-0 z-50 mt-1 w-[220px] rounded-md border border-slate-700 bg-slate-800 p-2 shadow-xl",
+                                    "absolute top-full left-0 z-50 mt-1 w-[220px] rounded-md border border-sidebar-border bg-sidebar p-2 shadow-xl",
                                     isCrmMenuOpen ? "block" : "hidden"
                                 )}
                             >
@@ -197,8 +198,8 @@ export const DashboardSidebar = () => {
                                             key={item.url}
                                             href={item.url}
                                             className={cn(
-                                                "block rounded-sm px-2 py-1.5 text-sm text-slate-200 hover:bg-slate-700",
-                                                pathname === item.url && "bg-indigo-600 text-white"
+                                                "block rounded-sm px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
+                                                pathname === item.url && "bg-sidebar-primary text-sidebar-primary-foreground"
                                             )}
                                         >
                                             {item.title}
@@ -211,7 +212,7 @@ export const DashboardSidebar = () => {
                 </SidebarGroupContent>
             </SidebarGroup>
             <SidebarGroup>
-                <SidebarGroupLabel className="text-white">
+                <SidebarGroupLabel className="text-sidebar-foreground/70">
                     Configuration
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -223,12 +224,12 @@ export const DashboardSidebar = () => {
                                     isActive(item.url)
                                 }
                                  className={cn(
-                                    isActive(item.url) && "bg-gradient-to-r from-indigo-600 to-violet-600! text-white! shadow-sm"
+                                    isActive(item.url) && "bg-sidebar-primary! text-sidebar-primary-foreground! shadow-sm"
                                 )}
                                 
                                  tooltip={item.title}>
                                     <Link href={item.url}>
-                                    <item.icon className="size-4 text-slate-200"/>
+                                    <item.icon className="size-4"/>
                                     <span>{item.title}</span>
                                     </Link>
 
@@ -239,7 +240,7 @@ export const DashboardSidebar = () => {
                 </SidebarGroupContent>
             </SidebarGroup>
              <SidebarGroup>
-                <SidebarGroupLabel className="text-white">
+                <SidebarGroupLabel className="text-sidebar-foreground/70">
                     Account
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -251,11 +252,11 @@ export const DashboardSidebar = () => {
                                     isActive(item.url)
                                 }
                                  className={cn(
-                                    isActive(item.url) && "bg-gradient-to-r from-indigo-600 to-violet-600! text-white! shadow-sm"
+                                    isActive(item.url) && "bg-sidebar-primary! text-sidebar-primary-foreground! shadow-sm"
                                 )}
                                  tooltip={item.title}>
                                     <Link href={item.url}>
-                                    <item.icon className="size-4 text-slate-200"/>
+                                    <item.icon className="size-4"/>
                                     <span>{item.title}</span>
                                     </Link>
 
