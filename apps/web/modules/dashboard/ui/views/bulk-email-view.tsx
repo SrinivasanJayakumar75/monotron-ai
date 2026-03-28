@@ -183,7 +183,7 @@ export function BulkEmailView() {
     };
 
     return (
-        <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 p-4 md:p-8">
+        <div className="flex min-h-screen flex-col bg-background p-4 md:p-8">
             <div className="mx-auto w-full max-w-3xl space-y-6">
                 <div className="space-y-1">
                     <h1 className="flex items-center gap-2 text-2xl font-semibold md:text-3xl">

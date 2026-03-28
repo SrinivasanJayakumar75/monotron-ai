@@ -7,11 +7,16 @@ import type { Id } from "@workspace/backend/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { Button } from "@workspace/ui/components/button";
 import { Separator } from "@workspace/ui/components/separator";
+import {
+    CrmActivitiesEmptyStateLinks,
+    CrmProfileActivitiesSection,
+} from "../components/crm-profile-activities-section";
 
 export const AccountDetailView = () => {
     const params = useParams<{ accountId: string }>();
     const accountId = params.accountId as Id<"accounts"> | undefined;
     const account = useQuery(api.private.accounts.getOne, accountId ? { accountId } : "skip");
+    const accountActivities = useQuery(api.private.activities.listByAccount, accountId ? { accountId } : "skip");
     const contacts = useQuery(api.private.contacts.list, accountId ? { accountId } : "skip");
     const linkedLeadIds = useQuery((api as any).private.leadAssociations.listByAccount, accountId ? { accountId } : "skip");
     const leads = useQuery(api.private.leads.list, {});
@@ -46,6 +51,10 @@ export const AccountDetailView = () => {
         );
     }
     const linkedLeads = leads.filter((l) => linkedLeadIds.includes(String(l._id)));
+    const accountEmail = account.email?.trim() ?? "";
+    const accountGmailComposeUrl = accountEmail
+        ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(accountEmail)}`
+        : "";
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 p-4 md:p-8">
@@ -93,7 +102,20 @@ export const AccountDetailView = () => {
                         </div>
                         <div>
                             <dt className="text-muted-foreground text-xs uppercase tracking-wide">Email</dt>
-                            <dd>{account.email ?? "—"}</dd>
+                            <dd>
+                                {accountEmail ? (
+                                    <a
+                                        href={accountGmailComposeUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-indigo-600 hover:underline"
+                                    >
+                                        {accountEmail}
+                                    </a>
+                                ) : (
+                                    "—"
+                                )}
+                            </dd>
                         </div>
                         <div>
                             <dt className="text-muted-foreground text-xs uppercase tracking-wide">Contacts</dt>
@@ -135,6 +157,20 @@ export const AccountDetailView = () => {
                         </ul>
                     )}
                 </section>
+
+                <CrmProfileActivitiesSection
+                    activities={accountActivities}
+                    subtitle="Tasks, calls, emails, and meetings linked to this account."
+                    createContext={{ relatedAccountId: account._id }}
+                    emptyState={
+                        <>
+                            No activities linked to this account yet.{" "}
+                            <span className="mt-2 block text-xs">
+                                <CrmActivitiesEmptyStateLinks />
+                            </span>
+                        </>
+                    }
+                />
             </div>
         </div>
     );

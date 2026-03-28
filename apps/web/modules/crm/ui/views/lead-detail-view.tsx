@@ -13,21 +13,23 @@ import {
     formatShortDate,
     leadCreatedAt,
 } from "../leads-ui-constants";
+import {
+    CrmActivitiesEmptyStateLinks,
+    CrmProfileActivitiesSection,
+} from "../components/crm-profile-activities-section";
+import { useCrmCurrency } from "../../lib/use-crm-currency";
 import { PencilIcon } from "lucide-react";
-
-function money(n: number | undefined) {
-    if (n === undefined) return "—";
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n);
-}
 
 export const LeadDetailView = () => {
     const params = useParams<{ leadId: string }>();
     const router = useRouter();
     const leadId = params.leadId as Id<"leads"> | undefined;
     const lead = useQuery(api.private.leads.getOne, leadId ? { leadId } : "skip");
+    const leadActivities = useQuery(api.private.activities.listByLead, leadId ? { leadId } : "skip");
     const association = useQuery((api as any).private.leadAssociations.getByLead, leadId ? { leadId } : "skip");
     const accounts = useQuery(api.private.accounts.list);
     const contacts = useQuery(api.private.contacts.list, {});
+    const { formatMoney } = useCrmCurrency();
 
     if (!leadId) {
         return (
@@ -61,6 +63,11 @@ export const LeadDetailView = () => {
 
     const account = association?.accountId ? accounts?.find((a) => a._id === association.accountId) : undefined;
     const contact = association?.contactId ? contacts?.find((c) => c._id === association.contactId) : undefined;
+
+    const leadEmail = lead.email?.trim() ?? "";
+    const gmailComposeUrl = leadEmail
+        ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(leadEmail)}`
+        : "";
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 p-4 md:p-8">
@@ -98,7 +105,20 @@ export const LeadDetailView = () => {
                         </div>
                         <div>
                             <dt className="text-muted-foreground text-xs uppercase tracking-wide">Email</dt>
-                            <dd>{lead.email ?? "—"}</dd>
+                            <dd>
+                                {leadEmail ? (
+                                    <a
+                                        href={gmailComposeUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-indigo-600 hover:underline"
+                                    >
+                                        {leadEmail}
+                                    </a>
+                                ) : (
+                                    "—"
+                                )}
+                            </dd>
                         </div>
                         <div>
                             <dt className="text-muted-foreground text-xs uppercase tracking-wide">Phone</dt>
@@ -173,7 +193,7 @@ export const LeadDetailView = () => {
                         </div>
                         <div>
                             <dt className="text-muted-foreground text-xs uppercase tracking-wide">Expected deal value</dt>
-                            <dd>{money(lead.expectedDealValue)}</dd>
+                            <dd>{formatMoney(lead.expectedDealValue)}</dd>
                         </div>
                         <div className="sm:col-span-2">
                             <dt className="text-muted-foreground text-xs uppercase tracking-wide">Product interest</dt>
@@ -193,6 +213,20 @@ export const LeadDetailView = () => {
                         </div>
                     </dl>
                 </section>
+
+                <CrmProfileActivitiesSection
+                    activities={leadActivities}
+                    subtitle="Tasks, calls, emails, and meetings linked to this lead."
+                    createContext={{ relatedLeadId: lead._id }}
+                    emptyState={
+                        <>
+                            No activities linked to this lead yet.{" "}
+                            <span className="mt-2 block text-xs">
+                                <CrmActivitiesEmptyStateLinks />
+                            </span>
+                        </>
+                    }
+                />
             </div>
         </div>
     );

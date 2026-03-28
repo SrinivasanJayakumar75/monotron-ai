@@ -17,6 +17,7 @@ import {
 } from "@workspace/ui/components/select";
 import { SearchIcon, Trash2Icon } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import { useCrmCurrency } from "../../lib/use-crm-currency";
 
 type Deal = Doc<"deals">;
 type Account = Doc<"accounts">;
@@ -42,6 +43,7 @@ function toTimestamp(dateStr: string): number | undefined {
 
 export const DealsView = () => {
     const { user } = useUser();
+    const { currency, formatMoney } = useCrmCurrency();
     const deals = useQuery(api.private.deals.list, {});
     const accounts = useQuery(api.private.accounts.list);
     const contacts = useQuery(api.private.contacts.list, {});
@@ -237,7 +239,7 @@ export const DealsView = () => {
                             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="New enterprise deal" />
                         </div>
                         <div className="space-y-1">
-                            <Label>Amount</Label>
+                            <Label>Amount ({currency})</Label>
                             <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="10000" />
                         </div>
                         <div className="space-y-1">
@@ -393,7 +395,7 @@ export const DealsView = () => {
                                                 <div key={deal._id} className="rounded-lg border border-slate-200 bg-white p-3">
                                                     <p className="text-sm font-semibold text-slate-900">{deal.name}</p>
                                                     <p className="mt-1 text-xs text-muted-foreground">
-                                                        Amount: ${deal.amount.toLocaleString()}
+                                                        Amount: {formatMoney(deal.amount)}
                                                     </p>
                                                     <p className="text-xs text-muted-foreground">
                                                         {account?.name ?? "No account"}
@@ -437,7 +439,7 @@ export const DealsView = () => {
                                     )}
                                 </div>
                                 <div className="border-t border-slate-200/80 px-3 py-2 text-xs text-muted-foreground">
-                                    Total: ${stageTotal.toLocaleString()}
+                                    Total: {formatMoney(stageTotal)}
                                 </div>
                             </div>
                         );

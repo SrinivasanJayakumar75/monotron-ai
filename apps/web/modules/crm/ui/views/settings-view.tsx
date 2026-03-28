@@ -2,12 +2,23 @@
 
 import { api } from "@workspace/backend/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { Textarea } from "@workspace/ui/components/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@workspace/ui/components/select";
+import {
+    CRM_CURRENCY_OPTIONS,
+    DEFAULT_CRM_CURRENCY,
+    normalizeCrmCurrencyCode,
+} from "../../lib/crm-currency";
 
 export const SettingsView = () => {
     const settings = useQuery(api.private.crmSettings.getOne, {});
@@ -17,33 +28,32 @@ export const SettingsView = () => {
     const [taxRate, setTaxRate] = useState("0");
     const [fiscalYearStartMonth, setFiscalYearStartMonth] = useState("1");
     const [autoNumbering, setAutoNumbering] = useState(true);
-    const [pipelineStagesJson, setPipelineStagesJson] = useState("[]");
     const [saving, setSaving] = useState(false);
+
+    const currencySelectOptions = useMemo(() => {
+        const v = normalizeCrmCurrencyCode(defaultCurrency);
+        if (v && !CRM_CURRENCY_OPTIONS.some((o) => o.value === v)) {
+            return [{ value: v, label: `${v} (saved)` }, ...CRM_CURRENCY_OPTIONS];
+        }
+        return CRM_CURRENCY_OPTIONS;
+    }, [defaultCurrency]);
 
     useEffect(() => {
         if (!settings) return;
-        setDefaultCurrency(settings.defaultCurrency);
+        setDefaultCurrency(normalizeCrmCurrencyCode(settings.defaultCurrency));
         setTaxRate(String(settings.taxRate));
         setFiscalYearStartMonth(String(settings.fiscalYearStartMonth));
         setAutoNumbering(settings.autoNumbering);
-        setPipelineStagesJson(JSON.stringify(settings.pipelineStages ?? [], null, 2));
     }, [settings]);
 
     const onSave = async () => {
         setSaving(true);
         try {
-            const parsedStages = JSON.parse(pipelineStagesJson) as Array<{
-                key: string;
-                label: string;
-                order: number;
-                probability?: number;
-            }>;
             await upsertSettings({
-                defaultCurrency: defaultCurrency.trim() || "USD",
+                defaultCurrency: defaultCurrency.trim().toUpperCase() || DEFAULT_CRM_CURRENCY,
                 taxRate: Number(taxRate) || 0,
                 fiscalYearStartMonth: Number(fiscalYearStartMonth) || 1,
                 autoNumbering,
-                pipelineStages: parsedStages,
             });
             toast.success("CRM settings saved");
         } catch (e) {
@@ -62,11 +72,32 @@ export const SettingsView = () => {
                     <p className="text-muted-foreground">Configure CRM defaults.</p>
                 </div>
 
-                <div className="mt-8 space-y-6 rounded-xl border border-slate-200/80 bg-white/90 p-6 shadow-sm">
-                    <div className="space-y-1">
-                        <Label>Default currency</Label>
-                        <Input value={defaultCurrency} onChange={(e) => setDefaultCurrency(e.target.value)} />
+                <div className="mt-8 space-y-8">
+                    <div className="rounded-xl border border-slate-200/80 bg-white/90 p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold">Currency</h2>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                            Used for deal amounts, lead expected value, pipeline totals, and charts on the executive
+                            dashboard.
+                        </p>
+                        <div className="mt-4 space-y-2">
+                            <Label htmlFor="crm-currency">Organization currency</Label>
+                            <Select value={defaultCurrency} onValueChange={setDefaultCurrency}>
+                                <SelectTrigger id="crm-currency" className="max-w-md">
+                                    <SelectValue placeholder="Select currency" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {currencySelectOptions.map((o) => (
+                                        <SelectItem key={o.value} value={o.value}>
+                                            {o.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
+
+                    <div className="space-y-6 rounded-xl border border-slate-200/80 bg-white/90 p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold">Other CRM defaults</h2>
                     <div className="space-y-1">
                         <Label>Tax rate %</Label>
                         <Input value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
@@ -93,15 +124,11 @@ export const SettingsView = () => {
                         />
                     </div>
                     <Button className="bg-indigo-600 text-white hover:bg-indigo-500" onClick={onSave} disabled={saving}>
-                        Save settings
+                        {saving ? "Saving…" : "Save all settings"}
                     </Button>
-                    <div className="space-y-1">
-                        <Label>Pipeline stage configuration (JSON)</Label>
-                        <Textarea
-                            rows={10}
-                            value={pipelineStagesJson}
-                            onChange={(e) => setPipelineStagesJson(e.target.value)}
-                        />
+                    <p className="text-muted-foreground text-xs">
+                        Saves currency, tax, fiscal year, and auto numbering together.
+                    </p>
                     </div>
                 </div>
             </div>
