@@ -185,8 +185,10 @@ export const EditLeadView = () => {
             });
             await upsertLeadAssociation({
                 leadId,
-                accountId: associatedAccountId === "none" ? undefined : (associatedAccountId as Id<"accounts">),
-                contactId: associatedContactId === "none" ? undefined : (associatedContactId as Id<"contacts">),
+                accountId:
+                    associatedAccountId === "none" ? null : (associatedAccountId as Id<"accounts">),
+                contactId:
+                    associatedContactId === "none" ? null : (associatedContactId as Id<"contacts">),
             });
             toast.success("Lead updated");
             router.push(`/crm/leads/${leadId}`);
@@ -368,13 +370,11 @@ export const EditLeadView = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
-                                    {(contacts ?? [])
-                                        .filter((c) => associatedAccountId === "none" || c.accountId === associatedAccountId)
-                                        .map((c) => (
-                                            <SelectItem key={c._id} value={c._id}>
-                                                {[c.firstName, c.lastName].filter(Boolean).join(" ") || c.firstName}
-                                            </SelectItem>
-                                        ))}
+                                    {(contacts ?? []).map((c) => (
+                                        <SelectItem key={c._id} value={c._id}>
+                                            {[c.firstName, c.lastName].filter(Boolean).join(" ") || c.firstName}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

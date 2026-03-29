@@ -182,3 +182,98 @@
     font-weight: 400;
   }
 }
+
+/* Dashboard: boxy cards + dark orange actions (scoped to dashboard layout) */
+.dashboard-scope [data-slot="card"] {
+  border-radius: 0 !important;
+  border-width: 2px !important;
+  border-color: color-mix(in oklab, var(--foreground) 18%, var(--border)) !important;
+  box-shadow: 4px 4px 0 0 color-mix(in oklab, var(--foreground) 10%, transparent) !important;
+}
+
+.dashboard-scope [data-slot="button"] {
+  border-radius: 0 !important;
+}
+
+/* Sidebar nav buttons: square + orange active / hover */
+.dashboard-scope [data-slot="sidebar-menu-button"] {
+  border-radius: 0 !important;
+}
+.dashboard-scope [data-slot="sidebar-menu-button"]:hover {
+  color: #fff7ed !important;
+  background-color: color-mix(in srgb, #ea580c 35%, transparent) !important;
+}
+.dashboard-scope [data-slot="sidebar-menu-button"][data-active="true"] {
+  color: #fff7ed !important;
+  background-color: #ea580c !important;
+  border: 2px solid #c2410c !important;
+}
+
+/* Filled / CTA buttons (default primary, indigo CTAs, secondary) — not destructive */
+.dashboard-scope
+  [data-slot="button"]:not([class*="bg-destructive"]):where(
+    .bg-primary,
+    .bg-secondary,
+    [class*="bg-indigo-"]
+  ) {
+  background-color: #ea580c !important;
+  color: #fff !important;
+  border: 2px solid #c2410c !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+.dashboard-scope
+  [data-slot="button"]:not([class*="bg-destructive"]):where(
+    .bg-primary,
+    .bg-secondary,
+    [class*="bg-indigo-"]
+  ):hover {
+  background-color: #c2410c !important;
+  border-color: #9a3412 !important;
+}
+
+/* Outline buttons */
+.dashboard-scope [data-slot="button"].border.bg-background.shadow-xs {
+  background-color: var(--background) !important;
+  color: #ea580c !important;
+  border: 2px solid #ea580c !important;
+  box-shadow: none !important;
+}
+.dashboard-scope [data-slot="button"].border.bg-background.shadow-xs:hover {
+  background-color: color-mix(in srgb, #ea580c 10%, var(--background)) !important;
+  color: #c2410c !important;
+}
+
+/* Link-style buttons */
+.dashboard-scope [data-slot="button"].underline-offset-4 {
+  color: #ea580c !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.dashboard-scope [data-slot="button"].underline-offset-4:hover {
+  color: #c2410c !important;
+}
+
+/* Ghost buttons */
+.dashboard-scope
+  [data-slot="button"].hover\:bg-accent:not(.border):not(.underline-offset-4):not([class*="bg-destructive"]) {
+  color: #ea580c !important;
+}
+.dashboard-scope
+  [data-slot="button"].hover\:bg-accent:not(.border):not(.underline-offset-4):not([class*="bg-destructive"]):hover {
+  background-color: color-mix(in srgb, #ea580c 14%, transparent) !important;
+}
+
+/* Gradient button variants → dark orange */
+.dashboard-scope [data-slot="button"][class*="from-[#3FB62F]"],
+.dashboard-scope [data-slot="button"][class*="from-yellow-500"] {
+  background: linear-gradient(to bottom, #fb923c, #ea580c) !important;
+  color: #fff !important;
+  border: 2px solid #c2410c !important;
+  box-shadow: none !important;
+}
+.dashboard-scope [data-slot="button"][class*="from-[#3FB62F]"]:hover,
+.dashboard-scope [data-slot="button"][class*="from-yellow-500"]:hover {
+  background: linear-gradient(to bottom, #ea580c, #c2410c) !important;
+}

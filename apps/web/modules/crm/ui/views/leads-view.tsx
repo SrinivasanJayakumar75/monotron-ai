@@ -25,7 +25,7 @@ import {
     TableHeader,
     TableRow,
 } from "@workspace/ui/components/table";
-import { SearchIcon, DownloadIcon, Trash2Icon, UserPlusIcon, PlusIcon } from "lucide-react";
+import { DownloadIcon, PlusIcon, SearchIcon, Trash2Icon, UserPlusIcon } from "lucide-react";
 import {
     displayLeadStatus,
     EMPTY_SELECT_VALUE,
@@ -43,6 +43,7 @@ import {
     DialogTitle,
 } from "@workspace/ui/components/dialog";
 import { useCrmCurrency } from "../../lib/use-crm-currency";
+import { cn } from "@workspace/ui/lib/utils";
 
 type Lead = Doc<"leads">;
 
@@ -55,6 +56,21 @@ const ASSIGNEE_ME = "__me__";
 function escapeCsv(s: string) {
     if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
     return s;
+}
+
+function leadStatusPillClass(displayStatus: string) {
+    switch (displayStatus) {
+        case "New":
+            return "border-sky-200 bg-sky-50 text-sky-900";
+        case "Contacted":
+            return "border-amber-200 bg-amber-50 text-amber-950";
+        case "Qualified":
+            return "border-emerald-200 bg-emerald-50 text-emerald-900";
+        case "Lost":
+            return "border-red-200 bg-red-50 text-red-900";
+        default:
+            return "border-slate-200 bg-slate-100 text-slate-800";
+    }
 }
 
 export const LeadsView = () => {
@@ -209,7 +225,8 @@ export const LeadsView = () => {
     const selectedIds = Array.from(selected);
 
     const resolveAssignee = () => {
-        if (assigneeKey === ASSIGNEE_NONE) return { userId: undefined as string | undefined, name: undefined as string | undefined };
+        if (assigneeKey === ASSIGNEE_NONE)
+            return { userId: undefined as string | undefined, name: undefined as string | undefined };
         if (assigneeKey === ASSIGNEE_ME && user) {
             return {
                 userId: user.id,
@@ -328,45 +345,78 @@ export const LeadsView = () => {
         e.target.value = "";
     };
 
+    const totalCount = leadsRaw?.length ?? 0;
+    const showingCount = filteredSorted.length;
+
     return (
-        <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 p-4 md:p-6">
-            <div className="mx-auto w-full max-w-[1400px] space-y-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-h-screen flex-col bg-[#f5f8fa]">
+            <div className="mx-auto w-full max-w-[1600px] flex-1 space-y-0 px-4 py-5 md:px-6 md:py-6">
+                <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold md:text-3xl">Leads</h1>
-                        <p className="text-muted-foreground text-sm">Search, filter, and manage your pipeline.</p>
+                        <h1 className="text-xl font-semibold text-slate-900 md:text-2xl">Leads</h1>
+                        <p className="text-muted-foreground text-sm">
+                            {leadsRaw === undefined ? (
+                                "Loading records…"
+                            ) : filteredSorted.length === leadsRaw.length ? (
+                                <>
+                                    <span className="font-medium text-slate-700">{totalCount.toLocaleString()}</span>{" "}
+                                    records
+                                </>
+                            ) : (
+                                <>
+                                    Showing{" "}
+                                    <span className="font-medium text-slate-700">
+                                        {showingCount.toLocaleString()}
+                                    </span>{" "}
+                                    of{" "}
+                                    <span className="font-medium text-slate-700">
+                                        {totalCount.toLocaleString()}
+                                    </span>{" "}
+                                    records (filters applied)
+                                </>
+                            )}
+                        </p>
                     </div>
-                    <Button asChild className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-                        <Link href="/crm/leads/new">
-                            <PlusIcon className="size-4" />
-                            Create lead
-                        </Link>
-                    </Button>
-                    <Button variant="outline" onClick={downloadOrgExport}>
-                        Export org CRM
-                    </Button>
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                        Import CSV
-                    </Button>
-                    <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={onImportCsv} />
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button asChild className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                            <Link href="/crm/leads/new">
+                                <PlusIcon className="size-4" />
+                                Create lead
+                            </Link>
+                        </Button>
+                        <Button variant="outline" className="border-slate-300 bg-white shadow-sm" onClick={downloadOrgExport}>
+                            Export org CRM
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="border-slate-300 bg-white shadow-sm"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            Import CSV
+                        </Button>
+                        <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={onImportCsv} />
+                    </div>
                 </div>
 
-                <div className="rounded-xl border bg-white/95 p-4 shadow-sm">
+                <div className="mb-3 border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end">
                         <div className="relative min-w-[200px] flex-1 lg:max-w-sm">
-                            <SearchIcon className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
-                            <Input
-                                className="pl-9"
-                                placeholder="Search leads…"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                aria-label="Search leads"
-                            />
+                            <Label className="text-xs text-slate-600">Search</Label>
+                            <div className="relative mt-1">
+                                <SearchIcon className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
+                                <Input
+                                    className="h-9 border-slate-300 bg-white pl-9 text-sm"
+                                    placeholder="Name, company, email, phone…"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    aria-label="Search leads"
+                                />
+                            </div>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Status</Label>
+                            <Label className="text-xs text-slate-600">Status</Label>
                             <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger className="h-9 w-[160px]">
+                                <SelectTrigger className="h-9 w-[160px] border-slate-300">
                                     <SelectValue placeholder="All statuses" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -380,9 +430,9 @@ export const LeadsView = () => {
                             </Select>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Source</Label>
+                            <Label className="text-xs text-slate-600">Source</Label>
                             <Select value={filterSource} onValueChange={setFilterSource}>
-                                <SelectTrigger className="h-9 w-[180px]">
+                                <SelectTrigger className="h-9 w-[180px] border-slate-300">
                                     <SelectValue placeholder="All sources" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -396,45 +446,45 @@ export const LeadsView = () => {
                             </Select>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Created from</Label>
+                            <Label className="text-xs text-slate-600">Created from</Label>
                             <Input
                                 type="date"
-                                className="h-9 w-[150px]"
+                                className="h-9 w-[150px] border-slate-300"
                                 value={createdFrom}
                                 onChange={(e) => setCreatedFrom(e.target.value)}
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Created to</Label>
+                            <Label className="text-xs text-slate-600">Created to</Label>
                             <Input
                                 type="date"
-                                className="h-9 w-[150px]"
+                                className="h-9 w-[150px] border-slate-300"
                                 value={createdTo}
                                 onChange={(e) => setCreatedTo(e.target.value)}
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Last contacted from</Label>
+                            <Label className="text-xs text-slate-600">Last contacted from</Label>
                             <Input
                                 type="date"
-                                className="h-9 w-[150px]"
+                                className="h-9 w-[150px] border-slate-300"
                                 value={contactedFrom}
                                 onChange={(e) => setContactedFrom(e.target.value)}
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Last contacted to</Label>
+                            <Label className="text-xs text-slate-600">Last contacted to</Label>
                             <Input
                                 type="date"
-                                className="h-9 w-[150px]"
+                                className="h-9 w-[150px] border-slate-300"
                                 value={contactedTo}
                                 onChange={(e) => setContactedTo(e.target.value)}
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Sort by</Label>
+                            <Label className="text-xs text-slate-600">Sort by</Label>
                             <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-                                <SelectTrigger className="h-9 w-[150px]">
+                                <SelectTrigger className="h-9 w-[150px] border-slate-300">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -447,9 +497,9 @@ export const LeadsView = () => {
                             </Select>
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Order</Label>
+                            <Label className="text-xs text-slate-600">Order</Label>
                             <Select value={sortDir} onValueChange={(v) => setSortDir(v as SortDir)}>
-                                <SelectTrigger className="h-9 w-[120px]">
+                                <SelectTrigger className="h-9 w-[120px] border-slate-300">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -462,112 +512,153 @@ export const LeadsView = () => {
                 </div>
 
                 {selectedIds.length > 0 ? (
-                    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm">
-                        <span className="font-medium">{selectedIds.length} selected</span>
-                        <Button size="sm" variant="outline" className="gap-1" onClick={() => setAssignOpen(true)}>
+                    <div className="mb-3 flex flex-wrap items-center gap-2 border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm">
+                        <span className="font-medium text-slate-800">{selectedIds.length} selected</span>
+                        <span className="text-slate-300">|</span>
+                        <Button size="sm" variant="outline" className="h-7 gap-1 border-slate-300 text-xs" onClick={() => setAssignOpen(true)}>
                             <UserPlusIcon className="size-3.5" />
-                            Assign
+                            Assign owner
                         </Button>
-                        <Button size="sm" variant="outline" className="gap-1" onClick={exportSelected}>
+                        <Button size="sm" variant="outline" className="h-7 gap-1 border-slate-300 text-xs" onClick={exportSelected}>
                             <DownloadIcon className="size-3.5" />
-                            Export
+                            Export selected
                         </Button>
-                        <Button size="sm" variant="destructive" className="gap-1" onClick={runBulkDelete}>
+                        <Button size="sm" variant="destructive" className="h-7 gap-1 text-xs" onClick={runBulkDelete}>
                             <Trash2Icon className="size-3.5" />
                             Delete
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-                            Clear selection
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelected(new Set())}>
+                            Clear
                         </Button>
                     </div>
                 ) : null}
 
-                <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                                <TableHead className="w-10">
+                <div className="border border-slate-200 bg-white shadow-sm">
+                    <Table className="min-w-[1180px] text-sm">
+                        <TableHeader className="sticky top-0 z-20 border-b border-slate-200 bg-[#eaf0f6] [&_tr]:border-0">
+                            <TableRow className="border-0 hover:bg-transparent">
+                                <TableHead className="w-10 px-2 py-2">
                                     <input
                                         type="checkbox"
                                         aria-label="Select all visible"
                                         checked={
-                                            filteredSorted.length > 0 &&
-                                            selected.size === filteredSorted.length
+                                            filteredSorted.length > 0 && selected.size === filteredSorted.length
                                         }
                                         onChange={toggleAllVisible}
-                                        className="h-4 w-4"
+                                        className="border-slate-400"
                                     />
                                 </TableHead>
-                                <TableHead>Lead name</TableHead>
-                                <TableHead>Company</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Phone</TableHead>
-                                <TableHead>Lead source</TableHead>
-                                <TableHead>Lead status</TableHead>
-                                <TableHead className="text-right">Expected value</TableHead>
-                                <TableHead>Assigned to</TableHead>
-                                <TableHead>Created</TableHead>
-                                <TableHead>Last contacted</TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Name
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Company
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Email
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Phone
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Source
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Status
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Deal value
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Owner
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Created
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Last activity
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
-                        <TableBody>
+                        <TableBody className="[&_tr]:border-slate-100">
                             {leadsRaw === undefined ? (
-                                <TableRow>
-                                    <TableCell colSpan={11} className="text-muted-foreground py-10 text-center">
+                                <TableRow className="hover:bg-transparent">
+                                    <TableCell colSpan={11} className="text-muted-foreground py-16 text-center text-sm">
                                         Loading…
                                     </TableCell>
                                 </TableRow>
                             ) : filteredSorted.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={11} className="text-muted-foreground py-10 text-center">
-                                        No leads match your filters.
+                                <TableRow className="hover:bg-transparent">
+                                    <TableCell colSpan={11} className="text-muted-foreground py-16 text-center text-sm">
+                                        No leads match your filters. Adjust search or clear filters.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredSorted.map((lead) => (
-                                    <TableRow key={lead._id} className="hover:bg-slate-50/50">
-                                        <TableCell onClick={(e) => e.stopPropagation()}>
-                                            <input
-                                                type="checkbox"
-                                                checked={selected.has(lead._id)}
-                                                onChange={() => toggle(lead._id)}
-                                                aria-label={`Select ${lead.name}`}
-                                                className="h-4 w-4"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Link
-                                                href={`/crm/leads/${lead._id}`}
-                                                className="font-medium text-indigo-700 hover:underline"
-                                            >
-                                                {lead.name}
-                                            </Link>
-                                        </TableCell>
-                                        <TableCell>{lead.company ?? "—"}</TableCell>
-                                        <TableCell className="max-w-[140px] truncate text-sm">
-                                            {lead.email ?? "—"}
-                                        </TableCell>
-                                        <TableCell className="text-sm">{lead.phone ?? "—"}</TableCell>
-                                        <TableCell className="text-sm">
-                                            {formatLeadSourceLabel(lead.leadSource)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">
-                                                {displayLeadStatus(lead.stage)}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="text-right text-sm tabular-nums">
-                                            {formatMoney(lead.expectedDealValue)}
-                                        </TableCell>
-                                        <TableCell className="text-sm">{lead.assignedToName ?? "—"}</TableCell>
-                                        <TableCell className="text-muted-foreground text-sm">
-                                            {formatShortDate(leadCreatedAt(lead))}
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground text-sm">
-                                            {formatShortDate(lead.lastContactedAt)}
-                                        </TableCell>
-                                    </TableRow>
-                                ))
+                                filteredSorted.map((lead, idx) => {
+                                    const dStatus = displayLeadStatus(lead.stage);
+                                    return (
+                                        <TableRow
+                                            key={lead._id}
+                                            className={cn(
+                                                "h-10 border-b border-slate-100 transition-colors",
+                                                idx % 2 === 1 && "bg-slate-50/40",
+                                                "hover:bg-sky-50/40",
+                                            )}
+                                        >
+                                            <TableCell className="px-2 py-1.5 align-middle" onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected.has(lead._id)}
+                                                    onChange={() => toggle(lead._id)}
+                                                    aria-label={`Select ${lead.name}`}
+                                                    className="border-slate-400"
+                                                />
+                                            </TableCell>
+                                            <TableCell className="max-w-[200px] px-3 py-1.5 align-middle">
+                                                <Link
+                                                    href={`/crm/leads/${lead._id}`}
+                                                    className="font-medium text-sky-800 underline-offset-2 hover:text-sky-950 hover:underline"
+                                                >
+                                                    {lead.name}
+                                                </Link>
+                                            </TableCell>
+                                            <TableCell className="max-w-[160px] truncate px-3 py-1.5 align-middle text-slate-800">
+                                                {lead.company ?? "—"}
+                                            </TableCell>
+                                            <TableCell className="max-w-[180px] truncate px-3 py-1.5 align-middle text-slate-700">
+                                                {lead.email ?? "—"}
+                                            </TableCell>
+                                            <TableCell className="whitespace-nowrap px-3 py-1.5 align-middle text-slate-700">
+                                                {lead.phone ?? "—"}
+                                            </TableCell>
+                                            <TableCell className="whitespace-nowrap px-3 py-1.5 align-middle text-slate-700">
+                                                {formatLeadSourceLabel(lead.leadSource)}
+                                            </TableCell>
+                                            <TableCell className="px-3 py-1.5 align-middle">
+                                                <span
+                                                    className={cn(
+                                                        "inline-flex rounded border px-2 py-0.5 text-xs font-medium",
+                                                        leadStatusPillClass(dStatus),
+                                                    )}
+                                                >
+                                                    {dStatus}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="px-3 py-1.5 text-right align-middle tabular-nums text-slate-800">
+                                                {formatMoney(lead.expectedDealValue)}
+                                            </TableCell>
+                                            <TableCell className="max-w-[140px] truncate px-3 py-1.5 align-middle text-slate-700">
+                                                {lead.assignedToName ?? "—"}
+                                            </TableCell>
+                                            <TableCell className="whitespace-nowrap px-3 py-1.5 align-middle text-slate-600">
+                                                {formatShortDate(leadCreatedAt(lead))}
+                                            </TableCell>
+                                            <TableCell className="whitespace-nowrap px-3 py-1.5 align-middle text-slate-600">
+                                                {formatShortDate(lead.lastContactedAt)}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
                             )}
                         </TableBody>
                     </Table>
@@ -604,7 +695,7 @@ export const LeadsView = () => {
                         <Button variant="outline" onClick={() => setAssignOpen(false)}>
                             Cancel
                         </Button>
-                        <Button onClick={runBulkAssign}>Apply</Button>
+                        <Button onClick={() => void runBulkAssign()}>Apply</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

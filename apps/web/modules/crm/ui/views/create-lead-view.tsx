@@ -151,8 +151,10 @@ export const CreateLeadView = () => {
             });
             await upsertLeadAssociation({
                 leadId,
-                accountId: associatedAccountId === "none" ? undefined : (associatedAccountId as Id<"accounts">),
-                contactId: associatedContactId === "none" ? undefined : (associatedContactId as Id<"contacts">),
+                accountId:
+                    associatedAccountId === "none" ? null : (associatedAccountId as Id<"accounts">),
+                contactId:
+                    associatedContactId === "none" ? null : (associatedContactId as Id<"contacts">),
             });
             const actSubject = activitySubject.trim();
             if (actSubject) {
@@ -349,13 +351,11 @@ export const CreateLeadView = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
-                                    {(contacts ?? [])
-                                        .filter((c) => associatedAccountId === "none" || c.accountId === associatedAccountId)
-                                        .map((c) => (
-                                            <SelectItem key={c._id} value={c._id}>
-                                                {[c.firstName, c.lastName].filter(Boolean).join(" ") || c.firstName}
-                                            </SelectItem>
-                                        ))}
+                                    {(contacts ?? []).map((c) => (
+                                        <SelectItem key={c._id} value={c._id}>
+                                            {[c.firstName, c.lastName].filter(Boolean).join(" ") || c.firstName}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

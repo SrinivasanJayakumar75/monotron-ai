@@ -7,6 +7,7 @@ import type { Id } from "@workspace/backend/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { Button } from "@workspace/ui/components/button";
 import { Separator } from "@workspace/ui/components/separator";
+import { PencilIcon } from "lucide-react";
 import {
     CrmActivitiesEmptyStateLinks,
     CrmProfileActivitiesSection,
@@ -17,8 +18,11 @@ export const AccountDetailView = () => {
     const accountId = params.accountId as Id<"accounts"> | undefined;
     const account = useQuery(api.private.accounts.getOne, accountId ? { accountId } : "skip");
     const accountActivities = useQuery(api.private.activities.listByAccount, accountId ? { accountId } : "skip");
-    const contacts = useQuery(api.private.contacts.list, accountId ? { accountId } : "skip");
-    const linkedLeadIds = useQuery((api as any).private.leadAssociations.listByAccount, accountId ? { accountId } : "skip");
+    const contacts = useQuery(
+        api.private.contacts.listRelatedToAccount,
+        accountId ? { accountId } : "skip",
+    );
+    const linkedLeadIds = useQuery(api.private.leadAssociations.listByAccount, accountId ? { accountId } : "skip");
     const leads = useQuery(api.private.leads.list, {});
 
     if (!accountId) {
@@ -50,7 +54,9 @@ export const AccountDetailView = () => {
             </div>
         );
     }
-    const linkedLeads = leads.filter((l) => linkedLeadIds.includes(String(l._id)));
+
+    const linkedLeadIdSet = new Set(linkedLeadIds.map(String));
+    const linkedLeads = leads.filter((l) => linkedLeadIdSet.has(String(l._id)));
     const accountEmail = account.email?.trim() ?? "";
     const accountGmailComposeUrl = accountEmail
         ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(accountEmail)}`
@@ -70,10 +76,19 @@ export const AccountDetailView = () => {
                         </p>
                         <h1 className="mt-1 text-2xl font-semibold">{account.name}</h1>
                     </div>
+                    <Button asChild className="gap-2">
+                        <Link href={`/crm/accounts/${account._id}/edit`}>
+                            <PencilIcon className="size-4" />
+                            Edit account
+                        </Link>
+                    </Button>
                 </div>
 
                 <section className="rounded-xl border bg-white p-6 shadow-sm">
                     <h2 className="text-lg font-semibold">Account information</h2>
+                    <p className="text-muted-foreground mt-1 text-sm">
+                        Company details, linked contacts, and leads you associated with this account.
+                    </p>
                     <Separator className="my-4" />
                     <dl className="grid gap-3 sm:grid-cols-2">
                         <div>
@@ -100,7 +115,7 @@ export const AccountDetailView = () => {
                             <dt className="text-muted-foreground text-xs uppercase tracking-wide">Phone</dt>
                             <dd>{account.phone ?? "—"}</dd>
                         </div>
-                        <div>
+                        <div className="sm:col-span-2">
                             <dt className="text-muted-foreground text-xs uppercase tracking-wide">Email</dt>
                             <dd>
                                 {accountEmail ? (
@@ -117,45 +132,47 @@ export const AccountDetailView = () => {
                                 )}
                             </dd>
                         </div>
-                        <div>
-                            <dt className="text-muted-foreground text-xs uppercase tracking-wide">Contacts</dt>
-                            <dd>{contacts.length}</dd>
-                        </div>
                     </dl>
-                </section>
-                <section className="rounded-xl border bg-white p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold">Associated contacts</h2>
-                    <Separator className="my-4" />
-                    {contacts.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No associated contacts.</p>
-                    ) : (
-                        <ul className="space-y-2">
-                            {contacts.map((contact) => (
-                                <li key={contact._id}>
-                                    <Link className="text-indigo-600 hover:underline" href={`/crm/contacts/${contact._id}`}>
-                                        {[contact.firstName, contact.lastName].filter(Boolean).join(" ") || contact.firstName}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </section>
-                <section className="rounded-xl border bg-white p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold">Associated leads</h2>
-                    <Separator className="my-4" />
-                    {linkedLeads.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No associated leads.</p>
-                    ) : (
-                        <ul className="space-y-2">
-                            {linkedLeads.map((lead) => (
-                                <li key={lead._id}>
-                                    <Link className="text-indigo-600 hover:underline" href={`/crm/leads/${lead._id}`}>
-                                        {lead.name}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+
+                    <Separator className="my-6" />
+                    <div className="space-y-2">
+                        <h3 className="text-sm font-semibold text-slate-900">Associated contacts</h3>
+                        <p className="text-muted-foreground text-xs">
+                            People on this account (including any linked from leads tied to this account).
+                        </p>
+                        {contacts.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">None yet — add them when creating or editing this account.</p>
+                        ) : (
+                            <ul className="mt-2 space-y-1.5 border-t border-slate-100 pt-3">
+                                {contacts.map((contact) => (
+                                    <li key={contact._id}>
+                                        <Link className="text-indigo-600 hover:underline" href={`/crm/contacts/${contact._id}`}>
+                                            {[contact.firstName, contact.lastName].filter(Boolean).join(" ") || contact.firstName}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+
+                    <Separator className="my-6" />
+                    <div className="space-y-2">
+                        <h3 className="text-sm font-semibold text-slate-900">Associated leads</h3>
+                        <p className="text-muted-foreground text-xs">Leads you linked to this account.</p>
+                        {linkedLeads.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">None yet — add them when creating or editing this account.</p>
+                        ) : (
+                            <ul className="mt-2 space-y-1.5 border-t border-slate-100 pt-3">
+                                {linkedLeads.map((lead) => (
+                                    <li key={lead._id}>
+                                        <Link className="text-indigo-600 hover:underline" href={`/crm/leads/${lead._id}`}>
+                                            {lead.name}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 </section>
 
                 <CrmProfileActivitiesSection
@@ -175,4 +192,3 @@ export const AccountDetailView = () => {
         </div>
     );
 };
-

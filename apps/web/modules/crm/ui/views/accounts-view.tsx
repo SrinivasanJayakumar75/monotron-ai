@@ -6,6 +6,7 @@ import type { Doc, Id } from "@workspace/backend/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { type ChangeEventHandler, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
     Table,
@@ -26,15 +27,20 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@workspace/ui/components/select";
-import { Trash2Icon } from "lucide-react";
+import { Trash2Icon, XIcon } from "lucide-react";
 import { CRM_ACTIVITY_TYPE_OPTIONS, type CrmActivityTypeValue } from "../crm-activity-constants";
 
 type Account = Doc<"accounts">;
+type Contact = Doc<"contacts">;
 
 export const AccountsView = () => {
+    const router = useRouter();
     const { user } = useUser();
     const accounts = useQuery(api.private.accounts.list);
+    const allContacts = useQuery(api.private.contacts.list, {});
+    const leads = useQuery(api.private.leads.list, {});
     const createAccount = useMutation(api.private.accounts.create);
+    const upsertLeadAssociation = useMutation(api.private.leadAssociations.upsert);
     const createActivity = useMutation(api.private.activities.create);
     const removeAccount = useMutation(api.private.accounts.remove);
     const importAccountsCsv = useMutation((api as any).private.accounts.importCsv);
@@ -56,6 +62,10 @@ export const AccountsView = () => {
     const [websiteFilter, setWebsiteFilter] = useState("all");
     const [createdFrom, setCreatedFrom] = useState("");
     const [createdTo, setCreatedTo] = useState("");
+    const [linkedContactIds, setLinkedContactIds] = useState<Id<"contacts">[]>([]);
+    const [linkedLeadIds, setLinkedLeadIds] = useState<Id<"leads">[]>([]);
+    const [pickContact, setPickContact] = useState("__none__");
+    const [pickLead, setPickLead] = useState("__none__");
 
     const industryOptions = useMemo(() => {
         const vals = Array.from(
@@ -91,6 +101,45 @@ export const AccountsView = () => {
                 .includes(q),
         );
     }, [accounts, industryFilter, websiteFilter, createdFrom, createdTo, search]);
+
+    const contactOptionsForCreate = useMemo(() => {
+        const rows = allContacts ?? [];
+        const linked = new Set(linkedContactIds.map(String));
+        return rows.filter((c) => !linked.has(String(c._id)));
+    }, [allContacts, linkedContactIds]);
+
+    const leadOptionsForCreate = useMemo(() => {
+        const rows = leads ?? [];
+        const linked = new Set(linkedLeadIds.map(String));
+        return rows.filter((l) => !linked.has(String(l._id)));
+    }, [leads, linkedLeadIds]);
+
+    const contactLabel = (c: Contact) =>
+        [c.firstName, c.lastName].filter(Boolean).join(" ") || c.firstName;
+
+    const onPickContactForCreate = (value: string) => {
+        if (value === "__none__") {
+            setPickContact("__none__");
+            return;
+        }
+        const id = value as Id<"contacts">;
+        setLinkedContactIds((prev) =>
+            prev.some((x) => String(x) === value) ? prev : [...prev, id],
+        );
+        setPickContact("__none__");
+    };
+
+    const onPickLeadForCreate = (value: string) => {
+        if (value === "__none__") {
+            setPickLead("__none__");
+            return;
+        }
+        const id = value as Id<"leads">;
+        setLinkedLeadIds((prev) =>
+            prev.some((x) => String(x) === value) ? prev : [...prev, id],
+        );
+        setPickLead("__none__");
+    };
 
     const exportFiltered = () => {
         const headers = ["name", "website", "industry", "phone", "email", "created_at"];
@@ -133,7 +182,12 @@ export const AccountsView = () => {
                 industry: industry.trim() || undefined,
                 phone: phone.trim() || undefined,
                 email: email.trim() || undefined,
+                linkedContactIds:
+                    linkedContactIds.length > 0 ? linkedContactIds : undefined,
             });
+            for (const lid of linkedLeadIds) {
+                await upsertLeadAssociation({ leadId: lid, accountId });
+            }
             const actSubject = activitySubject.trim();
             if (actSubject) {
                 await createActivity({
@@ -156,7 +210,12 @@ export const AccountsView = () => {
             setActivitySubject("");
             setActivityDescription("");
             setActivityDueDate("");
+            setLinkedContactIds([]);
+            setLinkedLeadIds([]);
+            setPickContact("__none__");
+            setPickLead("__none__");
             toast.success("Account created");
+            router.push(`/crm/accounts/${accountId}`);
         } catch (e) {
             const message = e instanceof Error ? e.message : "Failed to create account";
             toast.error(message);
@@ -268,6 +327,104 @@ export const AccountsView = () => {
                             <Label>Email</Label>
                             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sales@acme.com" />
                         </div>
+
+                        <div className="md:col-span-5 space-y-3 border-t border-slate-100 pt-4">
+                            <div>
+                                <p className="text-sm font-medium">Associated contacts &amp; leads (optional)</p>
+                                <p className="text-muted-foreground text-xs">
+                                    Pick a contact or lead from the list to link it (no separate &quot;Add&quot; step).
+                                </p>
+                            </div>
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label>Contacts</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {linkedContactIds.length === 0 ? (
+                                            <span className="text-muted-foreground text-xs">None selected</span>
+                                        ) : (
+                                            linkedContactIds.map((id) => {
+                                                const c = allContacts?.find((x) => x._id === id);
+                                                return (
+                                                    <span
+                                                        key={id}
+                                                        className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs"
+                                                    >
+                                                        {c ? contactLabel(c) : id}
+                                                        <button
+                                                            type="button"
+                                                            className="rounded p-0.5 hover:bg-slate-200"
+                                                            aria-label="Remove"
+                                                            onClick={() =>
+                                                                setLinkedContactIds((p) => p.filter((x) => x !== id))
+                                                            }
+                                                        >
+                                                            <XIcon className="size-3" />
+                                                        </button>
+                                                    </span>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                    <Select value={pickContact} onValueChange={onPickContactForCreate}>
+                                        <SelectTrigger className="h-9 min-w-[220px] w-full max-w-sm">
+                                            <SelectValue placeholder="Add contact" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="__none__">Select…</SelectItem>
+                                            {contactOptionsForCreate.map((c) => (
+                                                <SelectItem key={c._id} value={c._id}>
+                                                    {contactLabel(c)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Leads</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {linkedLeadIds.length === 0 ? (
+                                            <span className="text-muted-foreground text-xs">None selected</span>
+                                        ) : (
+                                            linkedLeadIds.map((id) => {
+                                                const l = leads?.find((x) => x._id === id);
+                                                return (
+                                                    <span
+                                                        key={id}
+                                                        className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-900"
+                                                    >
+                                                        {l?.name ?? id}
+                                                        <button
+                                                            type="button"
+                                                            className="rounded p-0.5 hover:bg-indigo-100"
+                                                            aria-label="Remove"
+                                                            onClick={() =>
+                                                                setLinkedLeadIds((p) => p.filter((x) => x !== id))
+                                                            }
+                                                        >
+                                                            <XIcon className="size-3" />
+                                                        </button>
+                                                    </span>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                    <Select value={pickLead} onValueChange={onPickLeadForCreate}>
+                                        <SelectTrigger className="h-9 min-w-[220px] w-full max-w-sm">
+                                            <SelectValue placeholder="Add lead" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="__none__">Select…</SelectItem>
+                                            {leadOptionsForCreate.map((l) => (
+                                                <SelectItem key={l._id} value={l._id}>
+                                                    {l.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="md:col-span-5 space-y-3 border-t border-slate-100 pt-4">
                             <div>
                                 <p className="text-sm font-medium">Initial activity (optional)</p>

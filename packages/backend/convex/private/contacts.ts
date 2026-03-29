@@ -1,7 +1,52 @@
 import { mutation, query } from "../_generated/server";
 import { ConvexError, v } from "convex/values";
+import type { Id } from "../_generated/dataModel";
 import { requireCrmPermission } from "./_crmAuth";
 import { writeAuditEvent } from "./_audit";
+import { loadLeadAssociationRows } from "./leadAssociations";
+
+function associationDetails(details: string | undefined) {
+    try {
+        return JSON.parse(details ?? "{}") as { accountId?: string; contactId?: string };
+    } catch {
+        return {};
+    }
+}
+
+/** Contacts on this account (accountId) plus any contact referenced on a lead linked to this account. */
+export const listRelatedToAccount = query({
+    args: { accountId: v.id("accounts") },
+    handler: async (ctx, args) => {
+        const { orgId } = await requireCrmPermission(ctx, "read");
+        const account = await ctx.db.get(args.accountId);
+        if (!account || account.organizationId !== orgId) {
+            return [];
+        }
+
+        const direct = await ctx.db
+            .query("contacts")
+            .withIndex("by_account_id", (q) => q.eq("accountId", args.accountId))
+            .order("desc")
+            .collect();
+
+        const byId = new Map(direct.filter((c) => c.organizationId === orgId).map((c) => [c._id, c]));
+
+        const rows = await loadLeadAssociationRows(ctx, orgId);
+        const aid = String(args.accountId);
+        for (const r of rows) {
+            const d = associationDetails(r.details);
+            if (d.accountId !== aid || !d.contactId) continue;
+            const cid = d.contactId as Id<"contacts">;
+            if (byId.has(cid)) continue;
+            const c = await ctx.db.get(cid);
+            if (c && c.organizationId === orgId) {
+                byId.set(c._id, c);
+            }
+        }
+
+        return [...byId.values()].sort((a, b) => b._creationTime - a._creationTime);
+    },
+});
 
 export const list = query({
     args: {
@@ -75,6 +120,116 @@ export const create = mutation({
             action: "create",
         });
         return id;
+    },
+});
+
+export const update = mutation({
+    args: {
+        contactId: v.id("contacts"),
+        accountId: v.optional(v.union(v.id("accounts"), v.null())),
+        firstName: v.string(),
+        lastName: v.optional(v.string()),
+        email: v.optional(v.string()),
+        phone: v.optional(v.string()),
+        title: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const { orgId, userId } = await requireCrmPermission(ctx, "write");
+        const contact = await ctx.db.get(args.contactId);
+        if (!contact || contact.organizationId !== orgId) {
+            throw new ConvexError({ code: "NOT_FOUND", message: "Contact not found" });
+        }
+        const firstName = args.firstName.trim();
+        if (!firstName) {
+            throw new ConvexError({ code: "BAD_REQUEST", message: "First name is required" });
+        }
+        if (args.accountId && args.accountId !== null) {
+            const account = await ctx.db.get(args.accountId);
+            if (!account || account.organizationId !== orgId) {
+                throw new ConvexError({ code: "BAD_REQUEST", message: "Invalid account" });
+            }
+        }
+        const base = {
+            firstName,
+            lastName: args.lastName?.trim() || undefined,
+            email: args.email?.trim() || undefined,
+            phone: args.phone?.trim() || undefined,
+            title: args.title?.trim() || undefined,
+        };
+        if (args.accountId === undefined) {
+            await ctx.db.patch(args.contactId, base);
+        } else if (args.accountId === null) {
+            await ctx.db.patch(args.contactId, { ...base, accountId: undefined });
+        } else {
+            await ctx.db.patch(args.contactId, { ...base, accountId: args.accountId });
+        }
+        await writeAuditEvent(ctx, {
+            organizationId: orgId,
+            userId,
+            entityType: "contact",
+            entityId: String(args.contactId),
+            action: "update",
+        });
+    },
+});
+
+export const setAccount = mutation({
+    args: {
+        contactId: v.id("contacts"),
+        accountId: v.union(v.id("accounts"), v.null()),
+    },
+    handler: async (ctx, args) => {
+        const { orgId, userId } = await requireCrmPermission(ctx, "write");
+        const contact = await ctx.db.get(args.contactId);
+        if (!contact || contact.organizationId !== orgId) {
+            throw new ConvexError({ code: "NOT_FOUND", message: "Contact not found" });
+        }
+        if (args.accountId !== null) {
+            const account = await ctx.db.get(args.accountId);
+            if (!account || account.organizationId !== orgId) {
+                throw new ConvexError({ code: "BAD_REQUEST", message: "Invalid account" });
+            }
+        }
+        await ctx.db.patch(args.contactId, {
+            accountId: args.accountId === null ? undefined : args.accountId,
+        });
+        await writeAuditEvent(ctx, {
+            organizationId: orgId,
+            userId,
+            entityType: "contact",
+            entityId: String(args.contactId),
+            action: "update",
+            changes: JSON.stringify({ accountId: args.accountId }),
+        });
+    },
+});
+
+export const linkContactsToAccount = mutation({
+    args: {
+        accountId: v.id("accounts"),
+        contactIds: v.array(v.id("contacts")),
+    },
+    handler: async (ctx, args) => {
+        const { orgId, userId } = await requireCrmPermission(ctx, "write");
+        const account = await ctx.db.get(args.accountId);
+        if (!account || account.organizationId !== orgId) {
+            throw new ConvexError({ code: "NOT_FOUND", message: "Account not found" });
+        }
+        for (const contactId of args.contactIds) {
+            const c = await ctx.db.get(contactId);
+            if (!c || c.organizationId !== orgId) {
+                throw new ConvexError({ code: "NOT_FOUND", message: "Contact not found" });
+            }
+            await ctx.db.patch(contactId, { accountId: args.accountId });
+        }
+        await writeAuditEvent(ctx, {
+            organizationId: orgId,
+            userId,
+            entityType: "account",
+            entityId: String(args.accountId),
+            action: "update",
+            changes: JSON.stringify({ linkedContacts: args.contactIds.length }),
+        });
     },
 });
 
