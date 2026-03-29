@@ -571,11 +571,13 @@ export function BulkEmailView() {
                                         <SelectValue placeholder="Pick a template" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {(templates ?? []).map((t: { id: string; label: string }) => (
-                                            <SelectItem key={t.id} value={t.id}>
-                                                {t.label}
-                                            </SelectItem>
-                                        ))}
+                                        {(templates ?? []).map((t) =>
+                                            t ? (
+                                                <SelectItem key={t.id} value={t.id}>
+                                                    {t.label}
+                                                </SelectItem>
+                                            ) : null,
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
