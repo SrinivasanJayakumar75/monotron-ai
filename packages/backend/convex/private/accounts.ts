@@ -35,6 +35,8 @@ export const create = mutation({
         industry: v.optional(v.string()),
         phone: v.optional(v.string()),
         email: v.optional(v.string()),
+        /** Linked in the same mutation so account detail always sees contacts after create. */
+        linkedContactIds: v.optional(v.array(v.id("contacts"))),
     },
     handler: async (ctx, args) => {
         const { orgId, userId } = await requireCrmPermission(ctx, "write");
@@ -54,7 +56,63 @@ export const create = mutation({
             entityId: String(id),
             action: "create",
         });
+
+        const contactIds = args.linkedContactIds ?? [];
+        for (const contactId of contactIds) {
+            const c = await ctx.db.get(contactId);
+            if (!c || c.organizationId !== orgId) {
+                throw new ConvexError({ code: "NOT_FOUND", message: "Contact not found" });
+            }
+            await ctx.db.patch(contactId, { accountId: id });
+        }
+        if (contactIds.length > 0) {
+            await writeAuditEvent(ctx, {
+                organizationId: orgId,
+                userId,
+                entityType: "account",
+                entityId: String(id),
+                action: "update",
+                changes: JSON.stringify({ linkedContacts: contactIds.length }),
+            });
+        }
+
         return id;
+    },
+});
+
+export const update = mutation({
+    args: {
+        accountId: v.id("accounts"),
+        name: v.string(),
+        website: v.optional(v.string()),
+        industry: v.optional(v.string()),
+        phone: v.optional(v.string()),
+        email: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const { orgId, userId } = await requireCrmPermission(ctx, "write");
+        const account = await ctx.db.get(args.accountId);
+        if (!account || account.organizationId !== orgId) {
+            throw new ConvexError({ code: "NOT_FOUND", message: "Account not found" });
+        }
+        const name = args.name.trim();
+        if (!name) {
+            throw new ConvexError({ code: "BAD_REQUEST", message: "Account name is required" });
+        }
+        await ctx.db.patch(args.accountId, {
+            name,
+            website: args.website?.trim() || undefined,
+            industry: args.industry?.trim() || undefined,
+            phone: args.phone?.trim() || undefined,
+            email: args.email?.trim() || undefined,
+        });
+        await writeAuditEvent(ctx, {
+            organizationId: orgId,
+            userId,
+            entityType: "account",
+            entityId: String(args.accountId),
+            action: "update",
+        });
     },
 });
 

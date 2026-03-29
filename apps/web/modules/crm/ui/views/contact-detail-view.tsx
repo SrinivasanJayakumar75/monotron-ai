@@ -11,6 +11,7 @@ import {
     CrmActivitiesEmptyStateLinks,
     CrmProfileActivitiesSection,
 } from "../components/crm-profile-activities-section";
+import { PencilIcon } from "lucide-react";
 
 export const ContactDetailView = () => {
     const params = useParams<{ contactId: string }>();
@@ -18,6 +19,12 @@ export const ContactDetailView = () => {
     const contact = useQuery(api.private.contacts.getOne, contactId ? { contactId } : "skip");
     const contactActivities = useQuery(api.private.activities.listByContact, contactId ? { contactId } : "skip");
     const accounts = useQuery(api.private.accounts.list);
+    const contactsAtSameAccount = useQuery(
+        api.private.contacts.list,
+        contact !== undefined && contact !== null && contact.accountId
+            ? { accountId: contact.accountId }
+            : "skip",
+    );
 
     if (!contactId) {
         return (
@@ -51,6 +58,10 @@ export const ContactDetailView = () => {
 
     const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
     const account = contact.accountId ? accounts.find((a) => a._id === contact.accountId) : undefined;
+    const otherContactsAtAccount =
+        contact.accountId && contactsAtSameAccount
+            ? contactsAtSameAccount.filter((c) => c._id !== contact._id)
+            : [];
     const contactEmail = contact.email?.trim() ?? "";
     const contactGmailComposeUrl = contactEmail
         ? `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(contactEmail)}`
@@ -70,6 +81,12 @@ export const ContactDetailView = () => {
                         </p>
                         <h1 className="mt-1 text-2xl font-semibold">{fullName || "Contact"}</h1>
                     </div>
+                    <Button asChild className="gap-2">
+                        <Link href={`/crm/contacts/${contact._id}/edit`}>
+                            <PencilIcon className="size-4" />
+                            Edit contact
+                        </Link>
+                    </Button>
                 </div>
 
                 <section className="rounded-xl border bg-white p-6 shadow-sm">
@@ -123,6 +140,30 @@ export const ContactDetailView = () => {
                         </div>
                     </dl>
                 </section>
+
+                {contact.accountId ? (
+                    <section className="rounded-xl border bg-white p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold">Other contacts at this account</h2>
+                        <Separator className="my-4" />
+                        {contactsAtSameAccount === undefined ? (
+                            <p className="text-muted-foreground text-sm">Loading…</p>
+                        ) : otherContactsAtAccount.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">
+                                No other contacts linked to this account yet.
+                            </p>
+                        ) : (
+                            <ul className="space-y-2">
+                                {otherContactsAtAccount.map((c) => (
+                                    <li key={c._id}>
+                                        <Link className="text-indigo-600 hover:underline" href={`/crm/contacts/${c._id}`}>
+                                            {[c.firstName, c.lastName].filter(Boolean).join(" ") || c.firstName}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+                ) : null}
 
                 <CrmProfileActivitiesSection
                     activities={contactActivities}
