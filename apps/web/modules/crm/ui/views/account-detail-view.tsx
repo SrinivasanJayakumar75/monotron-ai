@@ -12,6 +12,8 @@ import {
     CrmActivitiesEmptyStateLinks,
     CrmProfileActivitiesSection,
 } from "../components/crm-profile-activities-section";
+import { cn } from "@workspace/ui/lib/utils";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 export const AccountDetailView = () => {
     const params = useParams<{ accountId: string }>();
@@ -76,7 +78,7 @@ export const AccountDetailView = () => {
                         </p>
                         <h1 className="mt-1 text-2xl font-semibold">{account.name}</h1>
                     </div>
-                    <Button asChild className="gap-2">
+                    <Button asChild className={cn("gap-2", CRM_PRIMARY_BTN)}>
                         <Link href={`/crm/accounts/${account._id}/edit`}>
                             <PencilIcon className="size-4" />
                             Edit account

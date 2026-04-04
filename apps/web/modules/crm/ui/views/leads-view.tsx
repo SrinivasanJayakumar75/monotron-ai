@@ -43,6 +43,7 @@ import {
     DialogTitle,
 } from "@workspace/ui/components/dialog";
 import { useCrmCurrency } from "../../lib/use-crm-currency";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 import { cn } from "@workspace/ui/lib/utils";
 
 type Lead = Doc<"leads">;
@@ -129,7 +130,7 @@ export const LeadsView = () => {
         const q = search.trim().toLowerCase();
         if (q) {
             rows = rows.filter((l) => {
-                const blob = [l.name, l.company, l.email, l.phone, l.assignedToName]
+                const blob = [l.name, l.company, l.email, l.phone, l.whatsapp, l.assignedToName]
                     .filter(Boolean)
                     .join(" ")
                     .toLowerCase();
@@ -273,6 +274,7 @@ export const LeadsView = () => {
             "Company",
             "Email",
             "Phone",
+            "WhatsApp",
             "Lead Source",
             "Lead Status",
             "Expected deal value",
@@ -288,6 +290,7 @@ export const LeadsView = () => {
                     escapeCsv(l.company ?? ""),
                     escapeCsv(l.email ?? ""),
                     escapeCsv(l.phone ?? ""),
+                    escapeCsv(l.whatsapp ?? ""),
                     escapeCsv(formatLeadSourceLabel(l.leadSource)),
                     escapeCsv(displayLeadStatus(l.stage)),
                     escapeCsv(
@@ -378,15 +381,6 @@ export const LeadsView = () => {
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <Button asChild className="gap-2 bg-indigo-600 hover:bg-indigo-700">
-                            <Link href="/crm/leads/new">
-                                <PlusIcon className="size-4" />
-                                Create lead
-                            </Link>
-                        </Button>
-                        <Button variant="outline" className="border-slate-300 bg-white shadow-sm" onClick={downloadOrgExport}>
-                            Export org CRM
-                        </Button>
                         <Button
                             variant="outline"
                             className="border-slate-300 bg-white shadow-sm"
@@ -395,6 +389,15 @@ export const LeadsView = () => {
                             Import CSV
                         </Button>
                         <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={onImportCsv} />
+                        <Button asChild className={cn("gap-2", CRM_PRIMARY_BTN)}>
+                            <Link href="/crm/leads/new">
+                                <PlusIcon className="size-4" />
+                                Create lead
+                            </Link>
+                        </Button>
+                        <Button variant="outline" className="border-slate-300 bg-white shadow-sm" onClick={downloadOrgExport}>
+                            Export org CRM
+                        </Button>
                     </div>
                 </div>
 
@@ -406,7 +409,7 @@ export const LeadsView = () => {
                                 <SearchIcon className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
                                 <Input
                                     className="h-9 border-slate-300 bg-white pl-9 text-sm"
-                                    placeholder="Name, company, email, phone…"
+                                    placeholder="Name, company, email, phone, WhatsApp…"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     aria-label="Search leads"
@@ -534,7 +537,7 @@ export const LeadsView = () => {
                 ) : null}
 
                 <div className="border border-slate-200 bg-white shadow-sm">
-                    <Table className="min-w-[1180px] text-sm">
+                    <Table className="min-w-[1280px] text-sm">
                         <TableHeader className="sticky top-0 z-20 border-b border-slate-200 bg-[#eaf0f6] [&_tr]:border-0">
                             <TableRow className="border-0 hover:bg-transparent">
                                 <TableHead className="w-10 px-2 py-2">
@@ -561,6 +564,9 @@ export const LeadsView = () => {
                                     Phone
                                 </TableHead>
                                 <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    WhatsApp
+                                </TableHead>
+                                <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
                                     Source
                                 </TableHead>
                                 <TableHead className="whitespace-nowrap px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
@@ -583,13 +589,13 @@ export const LeadsView = () => {
                         <TableBody className="[&_tr]:border-slate-100">
                             {leadsRaw === undefined ? (
                                 <TableRow className="hover:bg-transparent">
-                                    <TableCell colSpan={11} className="text-muted-foreground py-16 text-center text-sm">
+                                    <TableCell colSpan={12} className="text-muted-foreground py-16 text-center text-sm">
                                         Loading…
                                     </TableCell>
                                 </TableRow>
                             ) : filteredSorted.length === 0 ? (
                                 <TableRow className="hover:bg-transparent">
-                                    <TableCell colSpan={11} className="text-muted-foreground py-16 text-center text-sm">
+                                    <TableCell colSpan={12} className="text-muted-foreground py-16 text-center text-sm">
                                         No leads match your filters. Adjust search or clear filters.
                                     </TableCell>
                                 </TableRow>
@@ -630,6 +636,9 @@ export const LeadsView = () => {
                                             </TableCell>
                                             <TableCell className="whitespace-nowrap px-3 py-1.5 align-middle text-slate-700">
                                                 {lead.phone ?? "—"}
+                                            </TableCell>
+                                            <TableCell className="max-w-[120px] truncate px-3 py-1.5 align-middle text-slate-700">
+                                                {lead.whatsapp ?? "—"}
                                             </TableCell>
                                             <TableCell className="whitespace-nowrap px-3 py-1.5 align-middle text-slate-700">
                                                 {formatLeadSourceLabel(lead.leadSource)}
@@ -695,7 +704,9 @@ export const LeadsView = () => {
                         <Button variant="outline" onClick={() => setAssignOpen(false)}>
                             Cancel
                         </Button>
-                        <Button onClick={() => void runBulkAssign()}>Apply</Button>
+                        <Button className={CRM_PRIMARY_BTN} onClick={() => void runBulkAssign()}>
+                            Apply
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -11,27 +11,30 @@ const plans = [
     price: "Free plan",
     description: "Perfect for individuals and small projects",
     features: [
-      "Dashboard Chatting",
+      "Dashboard live chat with website visitors",
       "Human to human chat only",
-      "Send Email to Customers"
     ],
     cta: "Get Started",
     popular: false,
   },
   {
     name: "Pro",
-    price: "$5",
+    price: "$6",
     period: "/month",
     description: "For growing teams and businesses",
     features: [
-      "AI Response",
+      "AI Response 24/7",
       "AI Voice Calling Feature",
+      "Inbuilt CRM (manage leads, deals, tasks many more)",
+      "Gmail Integration",
+      "Bulk email marketing upto 60000 emails a month",
+      "Shedule Emails to individual clients",
+      "Website analytics",
       "Escalate Feature for Human Chat",
       "Team collaboration",
       "Knowledge Base",
-      "Dashboard Chatting",
-      "Human to human chat",
-      "Send Email to Customers"
+      "Dashboard live chat with website visitors",
+      "Human to human chat"
     ],
     cta: "Start Now",
     popular: true,

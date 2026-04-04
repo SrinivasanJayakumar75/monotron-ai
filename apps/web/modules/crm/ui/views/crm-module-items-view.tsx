@@ -24,6 +24,7 @@ import {
     SelectValue,
 } from "@workspace/ui/components/select";
 import { Trash2Icon } from "lucide-react";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 type ModuleKey =
     | "products"
@@ -171,7 +172,7 @@ export const CrmModuleItemsView = ({
                             <Input value={details} onChange={(e) => setDetails(e.target.value)} />
                         </div>
                         <div className="md:col-span-6">
-                            <Button className="bg-indigo-600 text-white hover:bg-indigo-500" onClick={handleCreate} disabled={isCreating}>
+                            <Button className={CRM_PRIMARY_BTN} onClick={handleCreate} disabled={isCreating}>
                                 Create
                             </Button>
                         </div>

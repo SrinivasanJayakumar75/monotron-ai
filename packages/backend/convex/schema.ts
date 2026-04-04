@@ -15,6 +15,10 @@ export default defineSchema({
             suggestion2: v.optional(v.string()),
             suggestion3: v.optional(v.string()),
         }),
+        /** Up to 5 quick replies; takes precedence over defaultSuggestions when set. */
+        quickReplies: v.optional(v.array(v.string())),
+        /** When false, chips are hidden in the widget (text is preserved). */
+        quickRepliesEnabled: v.optional(v.boolean()),
         vapiSettings: v.object({
             assistantId: v.optional(v.string()),
             phoneNumber: v.optional(v.string()),
@@ -46,6 +50,7 @@ export default defineSchema({
                 })
             )
         ),
+        guidedQualificationFlow: v.optional(v.any()),
     })
     .index("by_organization_id", ["organizationId"]),
     plugins: defineTable({
@@ -105,6 +110,7 @@ export default defineSchema({
         name: v.string(),
         email: v.optional(v.string()),
         phone: v.optional(v.string()),
+        whatsapp: v.optional(v.string()),
         company: v.optional(v.string()),
         /** Pipeline status (simplified set). Legacy values may exist until migrated. */
         stage: v.union(
@@ -490,6 +496,43 @@ export default defineSchema({
         country: v.optional(v.string()),
         lastPath: v.optional(v.string()),
     })
-        .index("by_site", ["siteId"])
-        .index("by_site_and_client_session", ["siteId", "clientSessionId"]),
+    .index("by_site", ["siteId"])
+    .index("by_site_and_client_session", ["siteId", "clientSessionId"]),
+
+    /** Gmail bulk sends triggered at `scheduledAt` by scheduler → googleEmail.executeScheduledBulkEmail */
+    scheduledBulkEmails: defineTable({
+        organizationId: v.string(),
+        userId: v.string(),
+        internalTitle: v.optional(v.string()),
+        subject: v.string(),
+        body: v.string(),
+        previewText: v.optional(v.string()),
+        imageUrl: v.optional(v.string()),
+        recipients: v.array(
+            v.object({
+                email: v.string(),
+                firstName: v.optional(v.string()),
+                lastName: v.optional(v.string()),
+                name: v.optional(v.string()),
+                company: v.optional(v.string()),
+            }),
+        ),
+        /** Unix ms UTC — Convex scheduler fires at this time */
+        scheduledAt: v.number(),
+        status: v.union(
+            v.literal("pending"),
+            v.literal("processing"),
+            v.literal("completed"),
+            v.literal("failed"),
+            v.literal("cancelled"),
+        ),
+        schedulerJobId: v.optional(v.string()),
+        createdAt: v.number(),
+        completedAt: v.optional(v.number()),
+        sentCount: v.optional(v.number()),
+        failedCount: v.optional(v.number()),
+        lastError: v.optional(v.string()),
+    })
+        .index("by_organization_id_and_user_id", ["organizationId", "userId"])
+        .index("by_organization_id", ["organizationId"]),
 });

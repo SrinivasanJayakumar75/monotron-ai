@@ -19,6 +19,7 @@ import {
     DEFAULT_CRM_CURRENCY,
     normalizeCrmCurrencyCode,
 } from "../../lib/crm-currency";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 export const SettingsView = () => {
     const settings = useQuery(api.private.crmSettings.getOne, {});
@@ -123,7 +124,7 @@ export const SettingsView = () => {
                             className="h-4 w-4"
                         />
                     </div>
-                    <Button className="bg-indigo-600 text-white hover:bg-indigo-500" onClick={onSave} disabled={saving}>
+                    <Button className={CRM_PRIMARY_BTN} onClick={onSave} disabled={saving}>
                         {saving ? "Saving…" : "Save all settings"}
                     </Button>
                     <p className="text-muted-foreground text-xs">

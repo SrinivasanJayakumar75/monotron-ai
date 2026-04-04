@@ -56,6 +56,19 @@ export function displayLeadStatus(stage: Doc<"leads">["stage"]): string {
     }
 }
 
+/** Digits only for tel:/wa.me links */
+export function digitsOnly(value: string | undefined): string {
+    if (!value) return "";
+    return value.replace(/\D/g, "");
+}
+
+/** Opens WhatsApp chat for the given number (digits only, include country code). */
+export function whatsappChatUrl(value: string | undefined): string | null {
+    const d = digitsOnly(value);
+    if (!d) return null;
+    return `https://wa.me/${d}`;
+}
+
 export function formatShortDate(ms: number | undefined): string {
     if (ms === undefined) return "—";
     return new Intl.DateTimeFormat(undefined, {

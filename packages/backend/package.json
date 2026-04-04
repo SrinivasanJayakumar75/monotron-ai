@@ -2,8 +2,8 @@
   "name": "@workspace/backend",
   "type": "module",
   "scripts": {
-    "dev": "convex dev",
-    "setup": "convex dev --until-success"
+    "dev": "node --max-old-space-size=8192 ./node_modules/convex/bin/main.js dev",
+    "setup": "node --max-old-space-size=8192 ./node_modules/convex/bin/main.js dev --until-success"
   },
   "exports": {
     "./convex": "./convex/*.ts"

@@ -18,6 +18,7 @@ import {
     SelectValue,
 } from "@workspace/ui/components/select";
 import { PencilIcon, XIcon } from "lucide-react";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 type Account = Doc<"accounts">;
 type Contact = Doc<"contacts">;
@@ -294,7 +295,12 @@ export const AccountEditView = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button type="button" variant="secondary" onClick={addContact}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="border-violet-300 bg-violet-50/50 text-violet-900 hover:bg-violet-100"
+                            onClick={addContact}
+                        >
                             Add
                         </Button>
                     </div>
@@ -349,18 +355,19 @@ export const AccountEditView = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Button type="button" variant="secondary" onClick={addLead}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="border-violet-300 bg-violet-50/50 text-violet-900 hover:bg-violet-100"
+                            onClick={addLead}
+                        >
                             Add
                         </Button>
                     </div>
                 </section>
 
                 <div className="flex flex-wrap gap-2">
-                    <Button
-                        className="bg-indigo-600 text-white hover:bg-indigo-500"
-                        onClick={() => void save()}
-                        disabled={submitting}
-                    >
+                    <Button className={CRM_PRIMARY_BTN} onClick={() => void save()} disabled={submitting}>
                         {submitting ? "Saving…" : "Save changes"}
                     </Button>
                     <Button variant="outline" asChild>

@@ -18,6 +18,7 @@ import {
     SelectValue,
 } from "@workspace/ui/components/select";
 import { PencilIcon } from "lucide-react";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 type Account = Doc<"accounts">;
 
@@ -175,11 +176,7 @@ export const ContactEditView = () => {
                 </section>
 
                 <div className="flex flex-wrap gap-2">
-                    <Button
-                        className="bg-indigo-600 text-white hover:bg-indigo-500"
-                        onClick={() => void save()}
-                        disabled={submitting}
-                    >
+                    <Button className={CRM_PRIMARY_BTN} onClick={() => void save()} disabled={submitting}>
                         {submitting ? "Saving…" : "Save changes"}
                     </Button>
                     <Button variant="outline" asChild>
