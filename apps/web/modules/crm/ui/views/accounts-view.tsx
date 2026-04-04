@@ -27,8 +27,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@workspace/ui/components/select";
-import { Trash2Icon, XIcon } from "lucide-react";
+import { Badge } from "@workspace/ui/components/badge";
+import { Card, CardContent } from "@workspace/ui/components/card";
+import { Building2Icon, ExternalLinkIcon, SearchIcon, Trash2Icon, XIcon } from "lucide-react";
 import { CRM_ACTIVITY_TYPE_OPTIONS, type CrmActivityTypeValue } from "../crm-activity-constants";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 type Account = Doc<"accounts">;
 type Contact = Doc<"contacts">;
@@ -249,64 +252,91 @@ export const AccountsView = () => {
     };
 
     return (
-        <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-indigo-50/30 p-8">
-            <div className="mx-auto w-full max-w-screen-lg">
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl md:text-4xl">Accounts</h1>
-                            <p className="text-muted-foreground">Manage companies and organizations.</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                Import accounts
-                            </Button>
-                            <Button variant="outline" onClick={exportFiltered}>
-                                Export data
-                            </Button>
-                            <Button className="bg-indigo-600 text-white hover:bg-indigo-500" onClick={() => setShowCreateForm((v) => !v)}>
-                                {showCreateForm ? "Hide form" : "Create account"}
-                            </Button>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".csv,text/csv"
-                                className="hidden"
-                                onChange={onImportCsv}
-                            />
-                        </div>
+        <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 via-white to-indigo-50/40 p-6 md:p-8">
+            <div className="mx-auto w-full max-w-6xl space-y-8">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-1">
+                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">Accounts</h1>
+                        <p className="text-muted-foreground max-w-xl text-sm leading-relaxed md:text-base">
+                            Companies you sell to — link contacts and leads so activities and deals stay connected.
+                        </p>
                     </div>
-                    <div className="grid gap-3 rounded-lg border border-slate-200 bg-white/80 p-3 md:grid-cols-5">
-                        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, website, phone, email..." />
-                        <select
-                            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                            value={industryFilter}
-                            onChange={(e) => setIndustryFilter(e.target.value)}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                            Import accounts
+                        </Button>
+                        <Button variant="outline" onClick={exportFiltered}>
+                            Export data
+                        </Button>
+                        <Button
+                            className={CRM_PRIMARY_BTN}
+                            onClick={() => setShowCreateForm((v) => !v)}
                         >
-                            <option value="all">All industries</option>
-                            {industryOptions.map((industry) => (
-                                <option key={industry} value={industry}>
-                                    {industry}
-                                </option>
-                            ))}
-                        </select>
-                        <select
-                            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                            value={websiteFilter}
-                            onChange={(e) => setWebsiteFilter(e.target.value)}
-                        >
-                            <option value="all">All accounts</option>
-                            <option value="yes">Has website</option>
-                            <option value="no">Missing website</option>
-                        </select>
-                        <Input type="date" value={createdFrom} onChange={(e) => setCreatedFrom(e.target.value)} />
-                        <Input type="date" value={createdTo} onChange={(e) => setCreatedTo(e.target.value)} />
+                            {showCreateForm ? "Close form" : "Create account"}
+                        </Button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv,text/csv"
+                            className="hidden"
+                            onChange={onImportCsv}
+                        />
                     </div>
                 </div>
 
+                <Card className="border-slate-200/80 shadow-sm">
+                    <CardContent className="grid gap-3 p-4 md:grid-cols-5">
+                        <div className="relative md:col-span-2">
+                            <SearchIcon className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
+                            <Input
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search name, website, industry, phone, email…"
+                                className="h-10 pl-9"
+                            />
+                        </div>
+                        <Select value={industryFilter} onValueChange={setIndustryFilter}>
+                            <SelectTrigger className="h-10">
+                                <SelectValue placeholder="Industry" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All industries</SelectItem>
+                                {industryOptions.map((ind) => (
+                                    <SelectItem key={ind} value={ind}>
+                                        {ind}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select value={websiteFilter} onValueChange={setWebsiteFilter}>
+                            <SelectTrigger className="h-10">
+                                <SelectValue placeholder="Website" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All accounts</SelectItem>
+                                <SelectItem value="yes">Has website</SelectItem>
+                                <SelectItem value="no">Missing website</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Input
+                            type="date"
+                            value={createdFrom}
+                            onChange={(e) => setCreatedFrom(e.target.value)}
+                            className="h-10"
+                        />
+                        <Input
+                            type="date"
+                            value={createdTo}
+                            onChange={(e) => setCreatedTo(e.target.value)}
+                            className="h-10"
+                        />
+                    </CardContent>
+                </Card>
+
                 {showCreateForm && (
-                <div className="mt-6 rounded-xl border border-slate-200/80 bg-white/90 p-6 shadow-sm">
-                    <div className="grid gap-4 md:grid-cols-5">
+                <Card className="border-indigo-200/50 bg-indigo-50/15 shadow-md">
+                    <CardContent className="p-6">
+                        <div className="grid gap-4 md:grid-cols-5">
                         <div className="md:col-span-2 space-y-1">
                             <Label>Account name</Label>
                             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Acme Inc." />
@@ -479,19 +509,20 @@ export const AccountsView = () => {
                             </div>
                         </div>
                         <div className="md:col-span-5 flex items-end">
-                            <Button className="bg-indigo-600 text-white hover:bg-indigo-500" onClick={handleCreate} disabled={isCreating}>
+                            <Button className={CRM_PRIMARY_BTN} onClick={handleCreate} disabled={isCreating}>
                                 Create
                             </Button>
                         </div>
-                    </div>
-                </div>
+                        </div>
+                    </CardContent>
+                </Card>
                 )}
 
-                <div className="mt-8 overflow-hidden rounded-xl border border-slate-200/80 bg-white/90 shadow-sm">
+                <Card className="overflow-hidden border-slate-200/80 shadow-sm">
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
+                            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+                                <TableHead className="min-w-[200px]">Account</TableHead>
                                 <TableHead>Website</TableHead>
                                 <TableHead>Industry</TableHead>
                                 <TableHead>Phone</TableHead>
@@ -502,44 +533,96 @@ export const AccountsView = () => {
                         <TableBody>
                             {accounts === undefined ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                                    <TableCell colSpan={6} className="text-muted-foreground py-12 text-center">
                                         Loading…
                                     </TableCell>
                                 </TableRow>
                             ) : filteredAccounts.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                        No accounts match your filters
+                                    <TableCell colSpan={6} className="text-muted-foreground py-12 text-center">
+                                        {search || industryFilter !== "all" || websiteFilter !== "all" || createdFrom || createdTo
+                                            ? "No accounts match these filters — try clearing dates or search."
+                                            : "No accounts yet. Create one or import a CSV to populate this list."}
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredAccounts.map((account: Account) => (
-                                    <TableRow key={account._id}>
-                                        <TableCell className="font-medium">
-                                            <Link className="text-indigo-700 hover:underline" href={`/crm/accounts/${account._id}`}>
-                                                {account.name}
-                                            </Link>
-                                        </TableCell>
-                                        <TableCell>{account.website ?? "—"}</TableCell>
-                                        <TableCell>{account.industry ?? "—"}</TableCell>
-                                        <TableCell>{account.phone ?? "—"}</TableCell>
-                                        <TableCell>{account.email ?? "—"}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleDelete(account._id)}
-                                                aria-label={`Delete ${account.name}`}
-                                            >
-                                                <Trash2Icon className="size-4 text-destructive" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
+                                filteredAccounts.map((account: Account) => {
+                                    const site = account.website?.trim();
+                                    const href =
+                                        site && /^https?:\/\//i.test(site) ? site : site ? `https://${site}` : null;
+                                    return (
+                                        <TableRow key={account._id} className="group">
+                                            <TableCell>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50/80 text-indigo-700">
+                                                        <Building2Icon className="size-5 opacity-90" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <Link
+                                                            className="font-semibold text-indigo-800 hover:text-indigo-950 hover:underline"
+                                                            href={`/crm/accounts/${account._id}`}
+                                                        >
+                                                            {account.name}
+                                                        </Link>
+                                                        <p className="text-muted-foreground text-xs">Company record</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                {href ? (
+                                                    <a
+                                                        href={href}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="inline-flex max-w-[200px] items-center gap-1 truncate text-sm text-indigo-700 hover:underline"
+                                                    >
+                                                        <span className="truncate">{site}</span>
+                                                        <ExternalLinkIcon className="size-3.5 shrink-0 opacity-70" />
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-muted-foreground">—</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {account.industry?.trim() ? (
+                                                    <Badge variant="secondary" className="font-normal">
+                                                        {account.industry}
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-muted-foreground">—</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-sm">{account.phone ?? "—"}</TableCell>
+                                            <TableCell>
+                                                {account.email ? (
+                                                    <a
+                                                        href={`mailto:${account.email}`}
+                                                        className="text-sm text-indigo-700 hover:underline"
+                                                    >
+                                                        {account.email}
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-muted-foreground">—</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="opacity-70 hover:opacity-100"
+                                                    onClick={() => handleDelete(account._id)}
+                                                    aria-label={`Delete ${account.name}`}
+                                                >
+                                                    <Trash2Icon className="size-4 text-destructive" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
                             )}
                         </TableBody>
                     </Table>
-                </div>
+                </Card>
             </div>
         </div>
     );

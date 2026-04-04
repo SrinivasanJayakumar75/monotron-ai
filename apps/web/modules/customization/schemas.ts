@@ -2,11 +2,15 @@ import { z } from "zod";
 
 export const widgetSettingsSchema = z.object({
     greetMessage: z.string().min(1, "Greeting message is required"),
-    defaultSuggestions: z.object({
-        suggestion1: z.string().optional(),
-        suggestion2: z.string().optional(),
-        suggestion3: z.string().optional(),
-    }),
+    quickRepliesEnabled: z.boolean(),
+    /** Up to 5 lines; order is shown left-to-right in the widget. */
+    quickReplies: z
+        .array(
+            z.object({
+                text: z.string(),
+            })
+        )
+        .max(5, "At most 5 suggestions"),
     vapiSettings: z.object({
         assistantId: z.string().optional(),
         phoneNumber: z.string().optional(),

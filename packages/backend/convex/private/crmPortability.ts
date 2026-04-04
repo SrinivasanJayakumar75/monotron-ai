@@ -29,7 +29,16 @@ export const exportAll = query({
         ]);
         return {
             generatedAt: Date.now(),
-            leadsCsv: toCsv(leads.map((x) => ({ id: x._id, name: x.name, email: x.email, stage: x.stage }))),
+            leadsCsv: toCsv(
+                leads.map((x) => ({
+                    id: x._id,
+                    name: x.name,
+                    email: x.email,
+                    phone: x.phone,
+                    whatsapp: x.whatsapp,
+                    stage: x.stage,
+                })),
+            ),
             dealsCsv: toCsv(
                 deals.map((x) => ({
                     id: x._id,

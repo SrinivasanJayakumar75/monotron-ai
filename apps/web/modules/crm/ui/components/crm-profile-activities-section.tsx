@@ -21,6 +21,7 @@ import {
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { formatShortDate } from "../leads-ui-constants";
 import { CRM_ACTIVITY_TYPE_OPTIONS, type CrmActivityTypeValue } from "../crm-activity-constants";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 export type CrmActivityCreateContext =
     | { relatedLeadId: Id<"leads"> }
@@ -198,7 +199,7 @@ export function CrmProfileActivitiesSection({
                     <div className="flex flex-wrap gap-2">
                         <Button
                             type="button"
-                            className="bg-indigo-600 text-white hover:bg-indigo-500"
+                            className={CRM_PRIMARY_BTN}
                             disabled={saving}
                             onClick={() => void onCreateActivity()}
                         >

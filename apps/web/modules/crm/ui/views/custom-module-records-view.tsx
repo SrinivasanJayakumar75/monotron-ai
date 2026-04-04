@@ -24,6 +24,7 @@ import {
     TableRow,
 } from "@workspace/ui/components/table";
 import { Trash2Icon } from "lucide-react";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 function toTimestamp(dateStr: string): number | undefined {
     const trimmed = dateStr.trim();
@@ -157,7 +158,7 @@ export const CustomModuleRecordsView = ({ slug }: { slug: string }) => {
                             <Input value={details} onChange={(e) => setDetails(e.target.value)} />
                         </div>
                         <div className="md:col-span-5">
-                            <Button onClick={onCreate} disabled={saving}>
+                            <Button className={CRM_PRIMARY_BTN} onClick={onCreate} disabled={saving}>
                                 Add record
                             </Button>
                         </div>

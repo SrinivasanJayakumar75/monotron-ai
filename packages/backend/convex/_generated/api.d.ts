@@ -45,6 +45,7 @@ import type * as private_messages from "../private/messages.js";
 import type * as private_notes from "../private/notes.js";
 import type * as private_plugins from "../private/plugins.js";
 import type * as private_rbac from "../private/rbac.js";
+import type * as private_scheduledBulkEmail from "../private/scheduledBulkEmail.js";
 import type * as private_secrets from "../private/secrets.js";
 import type * as private_slas from "../private/slas.js";
 import type * as private_vapi from "../private/vapi.js";
@@ -118,6 +119,7 @@ declare const fullApi: ApiFromModules<{
   "private/notes": typeof private_notes;
   "private/plugins": typeof private_plugins;
   "private/rbac": typeof private_rbac;
+  "private/scheduledBulkEmail": typeof private_scheduledBulkEmail;
   "private/secrets": typeof private_secrets;
   "private/slas": typeof private_slas;
   "private/vapi": typeof private_vapi;

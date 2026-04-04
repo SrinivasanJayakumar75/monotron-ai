@@ -19,6 +19,8 @@ import {
 } from "@workspace/ui/components/select";
 import { Trash2Icon, PencilIcon } from "lucide-react";
 import { Card } from "@workspace/ui/components/card";
+import { cn } from "@workspace/ui/lib/utils";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 type FieldType = Doc<"crmLeadCustomFields">["fieldType"];
 
@@ -220,7 +222,7 @@ export const ManageLeadFieldsView = () => {
                             </div>
                         ) : null}
                     </div>
-                    <Button className="mt-4" onClick={addField} disabled={adding}>
+                    <Button className={cn("mt-4", CRM_PRIMARY_BTN)} onClick={addField} disabled={adding}>
                         Add field
                     </Button>
                 </Card>
@@ -300,7 +302,12 @@ export const ManageLeadFieldsView = () => {
                                                     ) : null}
                                                 </div>
                                                 <div className="flex flex-wrap gap-2">
-                                                    <Button size="sm" onClick={saveEdit} disabled={editSaving}>
+                                                    <Button
+                                                        size="sm"
+                                                        className={CRM_PRIMARY_BTN}
+                                                        onClick={saveEdit}
+                                                        disabled={editSaving}
+                                                    >
                                                         Save
                                                     </Button>
                                                     <Button

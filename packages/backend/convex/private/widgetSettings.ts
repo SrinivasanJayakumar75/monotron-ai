@@ -40,6 +40,8 @@ export const upsert = mutation({
                 })
             )
         ),
+        quickReplies: v.array(v.string()),
+        quickRepliesEnabled: v.boolean(),
     },
     handler: async (ctx, args) => {
          const identity = await ctx.auth.getUserIdentity();
@@ -58,6 +60,12 @@ export const upsert = mutation({
                                         message: "Organization not found",
                                     });
                                 }
+
+        const trimmedQuickReplies = args.quickReplies
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0)
+            .slice(0, 5);
+
         const existingWidgetSettings = await ctx.db
         .query("widgetSettings")
         .withIndex("by_organization_id", (q) => q.eq("organizationId", orgId))
@@ -72,7 +80,8 @@ export const upsert = mutation({
                 blogLinks: args.blogLinks,
                 faqs: args.faqs,
                 news: args.news,
-
+                quickReplies: trimmedQuickReplies,
+                quickRepliesEnabled: args.quickRepliesEnabled,
             });
         } else {
             await ctx.db.insert("widgetSettings", {
@@ -84,6 +93,8 @@ export const upsert = mutation({
                 blogLinks: args.blogLinks,
                 faqs: args.faqs,
                 news: args.news,
+                quickReplies: trimmedQuickReplies,
+                quickRepliesEnabled: args.quickRepliesEnabled,
             })
         }
         

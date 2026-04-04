@@ -129,6 +129,7 @@ const createArgs = {
     lastName: v.optional(v.string()),
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
+    whatsapp: v.optional(v.string()),
     company: v.optional(v.string()),
     stage: v.optional(leadStageValidator),
     leadSource: v.optional(v.string()),
@@ -226,6 +227,7 @@ export const create = mutation({
             name: displayName,
             email: optStr(args.email),
             phone: optStr(args.phone),
+            whatsapp: optStr(args.whatsapp),
             company: optStr(args.company),
             stage: args.stage ?? "New",
             leadSource: optStr(args.leadSource),
@@ -323,6 +325,7 @@ export const update = mutation({
 
         if (rest.email !== undefined) assignOpt("email", rest.email);
         if (rest.phone !== undefined) assignOpt("phone", rest.phone);
+        if (rest.whatsapp !== undefined) assignOpt("whatsapp", rest.whatsapp);
         if (rest.company !== undefined) assignOpt("company", rest.company);
         if (rest.stage !== undefined) patch.stage = rest.stage;
         if (rest.leadSource !== undefined) assignOpt("leadSource", rest.leadSource);
@@ -497,12 +500,13 @@ export const exportLeadsCsv = query({
             .withIndex("by_organization_id", (q) => q.eq("organizationId", orgId))
             .collect();
         const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
-        const headers = ["name", "email", "phone", "company", "stage", "leadSource"];
+        const headers = ["name", "email", "phone", "whatsapp", "company", "stage", "leadSource"];
         const body = leads.map((l) =>
             [
                 l.name,
                 l.email ?? "",
                 l.phone ?? "",
+                l.whatsapp ?? "",
                 l.company ?? "",
                 l.stage,
                 l.leadSource ?? "",
@@ -523,13 +527,30 @@ export const importCsv = mutation({
         let imported = 0;
         for (const line of lines.slice(1)) {
             const cols = line.split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
-            const [name, email, phone, company, stage, leadSource] = cols;
+            const name = cols[0];
             if (!name) continue;
+            const email = cols[1];
+            const phone = cols[2];
+            let whatsapp: string | undefined;
+            let company: string;
+            let stage: string;
+            let leadSource: string | undefined;
+            if (cols.length >= 7) {
+                whatsapp = cols[3];
+                company = cols[4] ?? "";
+                stage = cols[5] ?? "";
+                leadSource = cols[6];
+            } else {
+                company = cols[3] ?? "";
+                stage = cols[4] ?? "";
+                leadSource = cols[5];
+            }
             const leadId = await ctx.db.insert("leads", {
                 organizationId: orgId,
                 name,
                 email: optStr(email),
                 phone: optStr(phone),
+                whatsapp: optStr(whatsapp),
                 company: optStr(company),
                 stage: (stage as Doc<"leads">["stage"]) || "New",
                 leadSource: optStr(leadSource),

@@ -55,16 +55,25 @@ export const WidgetChatScreen = () => {
     }
 
     const suggestions = useMemo(() => {
-        if(!widgetSettings){
+        if (!widgetSettings) {
+            return [];
+        }
+        if (widgetSettings.quickRepliesEnabled === false) {
             return [];
         }
 
-        return Object.keys(widgetSettings.defaultSuggestions).map((key) => {
-            return widgetSettings.defaultSuggestions[
-                key as keyof typeof widgetSettings.defaultSuggestions
-            ]
-        })
-    }, [widgetSettings])
+        const fromList = (widgetSettings.quickReplies ?? [])
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+        if (fromList.length > 0) {
+            return fromList.slice(0, 5);
+        }
+
+        const d = widgetSettings.defaultSuggestions;
+        return [d.suggestion1, d.suggestion2, d.suggestion3]
+            .map((s) => (s ?? "").trim())
+            .filter((s) => s.length > 0);
+    }, [widgetSettings]);
 
     const conversation = useQuery(api.public.conversations.getOne, 
         conversationId && contactSessionId ?{
@@ -157,15 +166,12 @@ export const WidgetChatScreen = () => {
             onLoadMore={handleLoadMore}
             ref={topElementRef}/>
         </AIConversation>
-        {toUIMessages(messages.results ?? [])?.length === 1 && (
-        <AISuggestions className="flex w-full flex-col items-end p-2">
-            {suggestions.map((suggestion)=> {
-                if(!suggestion){
-                    return null;
-                }
-                return (
+        {toUIMessages(messages.results ?? [])?.length === 1 &&
+        suggestions.length > 0 && (
+        <AISuggestions className="px-2 pb-2">
+            {suggestions.map((suggestion, index) => (
                     <AISuggestion
-                    key={suggestion}
+                    key={`${index}-${suggestion.slice(0, 48)}`}
                     onClick={()=>{
                         form.setValue("message", suggestion, {
                             shouldValidate: true,
@@ -175,10 +181,7 @@ export const WidgetChatScreen = () => {
                         form.handleSubmit(onSubmit)();
                     }}
                     suggestion={suggestion}/>
-
-                    
-                )
-            })}
+            ))}
 
         </AISuggestions>
         )}

@@ -28,6 +28,7 @@ import {
     type PrimaryLeadStatus,
 } from "../leads-ui-constants";
 import { useCrmCurrency } from "../../lib/use-crm-currency";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 const ASSIGNEE_NONE = "__assign_none__";
 const ASSIGNEE_ME = "__me__";
@@ -73,6 +74,7 @@ export const EditLeadView = () => {
     const [company, setCompany] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
+    const [whatsapp, setWhatsapp] = useState("");
     const [website, setWebsite] = useState("");
     const [address, setAddress] = useState("");
     const [industry, setIndustry] = useState("");
@@ -106,6 +108,7 @@ export const EditLeadView = () => {
         setCompany(lead.company ?? "");
         setEmail(lead.email ?? "");
         setPhone(lead.phone ?? "");
+        setWhatsapp(lead.whatsapp ?? "");
         setWebsite(lead.website ?? "");
         setAddress(lead.address ?? "");
         setIndustry(lead.industry ?? "");
@@ -171,6 +174,7 @@ export const EditLeadView = () => {
                 company: company.trim() || undefined,
                 email: email.trim() || undefined,
                 phone: phone.trim() || undefined,
+                whatsapp: whatsapp.trim() || undefined,
                 website: website.trim() || undefined,
                 address: address.trim() || undefined,
                 industry: industry.trim() || undefined,
@@ -244,7 +248,7 @@ export const EditLeadView = () => {
                         <Button variant="outline" type="button" onClick={() => router.back()} disabled={submitting}>
                             Cancel
                         </Button>
-                        <Button type="button" onClick={save} disabled={submitting}>
+                        <Button type="button" className={CRM_PRIMARY_BTN} onClick={save} disabled={submitting}>
                             Save
                         </Button>
                     </div>
@@ -260,7 +264,7 @@ export const EditLeadView = () => {
                         </Label>
                         <Input value={name} onChange={(e) => setName(e.target.value)} />
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         <div className="space-y-1">
                             <Label>Company</Label>
                             <Input value={company} onChange={(e) => setCompany(e.target.value)} />
@@ -275,9 +279,17 @@ export const EditLeadView = () => {
                         </div>
                         <div className="space-y-1">
                             <Label>Phone</Label>
-                            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+                            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Office / mobile" />
                         </div>
-                        <div className="space-y-1 sm:col-span-2">
+                        <div className="space-y-1">
+                            <Label>WhatsApp</Label>
+                            <Input
+                                value={whatsapp}
+                                onChange={(e) => setWhatsapp(e.target.value)}
+                                placeholder="+1 555 0100 (with country code)"
+                            />
+                        </div>
+                        <div className="space-y-1 sm:col-span-2 lg:col-span-3">
                             <Label>Website</Label>
                             <Input value={website} onChange={(e) => setWebsite(e.target.value)} />
                         </div>

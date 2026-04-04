@@ -6,6 +6,41 @@ export type BulkRecipientInput = {
     company?: string;
 };
 
+function normalizeRecipient(r: BulkRecipientInput): BulkRecipientInput {
+    const email = r.email.trim().toLowerCase();
+    return {
+        email,
+        firstName: r.firstName?.trim() || undefined,
+        lastName: r.lastName?.trim() || undefined,
+        name: r.name?.trim() || undefined,
+        company: r.company?.trim() || undefined,
+    };
+}
+
+/** Merges `incoming` into `existing`, deduping by email (first row wins). */
+export function mergeBulkRecipientLists(
+    existing: BulkRecipientInput[],
+    incoming: BulkRecipientInput[],
+): { merged: BulkRecipientInput[]; skippedDuplicates: number } {
+    const map = new Map<string, BulkRecipientInput>();
+    for (const r of existing) {
+        const k = r.email.trim().toLowerCase();
+        if (!k) continue;
+        map.set(k, normalizeRecipient(r));
+    }
+    let skippedDuplicates = 0;
+    for (const r of incoming) {
+        const k = r.email.trim().toLowerCase();
+        if (!k) continue;
+        if (map.has(k)) {
+            skippedDuplicates++;
+            continue;
+        }
+        map.set(k, normalizeRecipient({ ...r, email: k }));
+    }
+    return { merged: [...map.values()], skippedDuplicates };
+}
+
 /** Minimal RFC-style CSV parse (quoted fields, commas). */
 export function parseCsv(text: string): string[][] {
     const rows: string[][] = [];

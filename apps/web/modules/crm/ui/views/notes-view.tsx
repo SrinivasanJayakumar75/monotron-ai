@@ -18,6 +18,8 @@ import {
     TableRow,
 } from "@workspace/ui/components/table";
 import { Trash2Icon } from "lucide-react";
+import { cn } from "@workspace/ui/lib/utils";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 type Note = Doc<"notes">;
 
@@ -79,7 +81,7 @@ export const NotesView = () => {
                             <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Meeting notes" />
                         </div>
                         <div className="space-y-1 flex items-end">
-                            <Button onClick={handleCreate} disabled={isCreating} className="w-full bg-indigo-600 text-white hover:bg-indigo-500">
+                            <Button onClick={handleCreate} disabled={isCreating} className={cn("w-full", CRM_PRIMARY_BTN)}>
                                 Add note
                             </Button>
                         </div>

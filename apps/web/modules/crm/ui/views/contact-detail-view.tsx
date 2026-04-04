@@ -12,6 +12,8 @@ import {
     CrmProfileActivitiesSection,
 } from "../components/crm-profile-activities-section";
 import { PencilIcon } from "lucide-react";
+import { cn } from "@workspace/ui/lib/utils";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 export const ContactDetailView = () => {
     const params = useParams<{ contactId: string }>();
@@ -81,7 +83,7 @@ export const ContactDetailView = () => {
                         </p>
                         <h1 className="mt-1 text-2xl font-semibold">{fullName || "Contact"}</h1>
                     </div>
-                    <Button asChild className="gap-2">
+                    <Button asChild className={cn("gap-2", CRM_PRIMARY_BTN)}>
                         <Link href={`/crm/contacts/${contact._id}/edit`}>
                             <PencilIcon className="size-4" />
                             Edit contact

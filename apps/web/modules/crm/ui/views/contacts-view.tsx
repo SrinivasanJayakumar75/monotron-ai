@@ -26,8 +26,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@workspace/ui/components/select";
-import { Trash2Icon } from "lucide-react";
+import { Badge } from "@workspace/ui/components/badge";
+import { Card, CardContent } from "@workspace/ui/components/card";
+import { Building2Icon, SearchIcon, Trash2Icon } from "lucide-react";
 import { CRM_ACTIVITY_TYPE_OPTIONS, type CrmActivityTypeValue } from "../crm-activity-constants";
+import { CRM_PRIMARY_BTN } from "../crm-ui-styles";
 
 type Contact = Doc<"contacts">;
 type Account = Doc<"accounts">;
@@ -103,6 +106,19 @@ export const ContactsView = () => {
                 .includes(q),
         );
     }, [contacts, filterAccount, filterHasEmail, filterIndustry, createdFrom, createdTo, search, accountMap]);
+
+    const contactStats = useMemo(() => {
+        const rows = contacts ?? [];
+        const withEmail = rows.filter((c) => Boolean(c.email?.trim())).length;
+        const withAccount = rows.filter((c) => Boolean(c.accountId)).length;
+        return { total: rows.length, withEmail, withAccount };
+    }, [contacts]);
+
+    function initialsFor(first: string, last?: string) {
+        const a = (first.trim()[0] ?? "").toUpperCase();
+        const b = (last?.trim()[0] ?? "").toUpperCase();
+        return (a + b || a || "?").slice(0, 2);
+    }
 
     const exportFiltered = () => {
         const headers = ["first_name", "last_name", "email", "phone", "title", "account", "industry", "created_at"];
@@ -207,37 +223,52 @@ export const ContactsView = () => {
     };
 
     return (
-        <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-indigo-50/30 p-8">
-            <div className="mx-auto w-full max-w-screen-lg">
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl md:text-4xl">Contacts</h1>
-                            <p className="text-muted-foreground">Manage people and their account relationship.</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                                Import contacts
-                            </Button>
-                            <Button variant="outline" onClick={exportFiltered}>
-                                Export data
-                            </Button>
-                            <Button className="bg-indigo-600 text-white hover:bg-indigo-500" onClick={() => setShowCreateForm((v) => !v)}>
-                                {showCreateForm ? "Hide form" : "Create contact"}
-                            </Button>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".csv,text/csv"
-                                className="hidden"
-                                onChange={onImportCsv}
+        <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 via-white to-indigo-50/40 p-6 md:p-8">
+            <div className="mx-auto w-full max-w-6xl space-y-8">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-1">
+                        <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">Contacts</h1>
+                        <p className="text-muted-foreground max-w-xl text-sm leading-relaxed md:text-base">
+                            People tied to accounts — use this list for outreach, handoffs, and bulk email recipient
+                            picks.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                            Import contacts
+                        </Button>
+                        <Button variant="outline" onClick={exportFiltered}>
+                            Export data
+                        </Button>
+                        <Button
+                            className={CRM_PRIMARY_BTN}
+                            onClick={() => setShowCreateForm((v) => !v)}
+                        >
+                            {showCreateForm ? "Close form" : "Create contact"}
+                        </Button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".csv,text/csv"
+                            className="hidden"
+                            onChange={onImportCsv}
+                        />
+                    </div>
+                </div>
+
+                <Card className="border-slate-200/80 shadow-sm">
+                    <CardContent className="grid gap-3 p-4 md:grid-cols-6">
+                        <div className="relative md:col-span-2">
+                            <SearchIcon className="text-muted-foreground absolute left-3 top-1/2 size-4 -translate-y-1/2" />
+                            <Input
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search name, title, phone, email…"
+                                className="h-10 pl-9"
                             />
                         </div>
-                    </div>
-                    <div className="grid gap-3 rounded-lg border border-slate-200 bg-white/80 p-3 md:grid-cols-6">
-                        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, phone, email..." />
                         <Select value={filterAccount} onValueChange={setFilterAccount}>
-                            <SelectTrigger className="h-9">
+                            <SelectTrigger className="h-10">
                                 <SelectValue placeholder="Filter by account" />
                             </SelectTrigger>
                             <SelectContent>
@@ -250,7 +281,7 @@ export const ContactsView = () => {
                             </SelectContent>
                         </Select>
                         <Select value={filterHasEmail} onValueChange={setFilterHasEmail}>
-                            <SelectTrigger className="h-9">
+                            <SelectTrigger className="h-10">
                                 <SelectValue placeholder="Email filter" />
                             </SelectTrigger>
                             <SelectContent>
@@ -260,7 +291,7 @@ export const ContactsView = () => {
                             </SelectContent>
                         </Select>
                         <Select value={filterIndustry} onValueChange={setFilterIndustry}>
-                            <SelectTrigger className="h-9">
+                            <SelectTrigger className="h-10">
                                 <SelectValue placeholder="Industry" />
                             </SelectTrigger>
                             <SelectContent>
@@ -272,13 +303,24 @@ export const ContactsView = () => {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Input type="date" value={createdFrom} onChange={(e) => setCreatedFrom(e.target.value)} />
-                        <Input type="date" value={createdTo} onChange={(e) => setCreatedTo(e.target.value)} />
-                    </div>
-                </div>
+                        <Input
+                            type="date"
+                            value={createdFrom}
+                            onChange={(e) => setCreatedFrom(e.target.value)}
+                            className="h-10"
+                        />
+                        <Input
+                            type="date"
+                            value={createdTo}
+                            onChange={(e) => setCreatedTo(e.target.value)}
+                            className="h-10"
+                        />
+                    </CardContent>
+                </Card>
 
                 {showCreateForm && (
-                <div className="mt-6 rounded-xl border border-slate-200/80 bg-white/90 p-6 shadow-sm">
+                <Card className="border-indigo-200/50 bg-indigo-50/15 shadow-md">
+                    <CardContent className="p-6">
                     <div className="grid gap-4 md:grid-cols-6">
                         <div className="md:col-span-2 space-y-1">
                             <Label>First name</Label>
@@ -372,19 +414,20 @@ export const ContactsView = () => {
                         </div>
 
                         <div className="md:col-span-6 flex items-end">
-                            <Button className="bg-indigo-600 text-white hover:bg-indigo-500" onClick={handleCreate} disabled={isCreating}>
+                            <Button className={CRM_PRIMARY_BTN} onClick={handleCreate} disabled={isCreating}>
                                 Create
                             </Button>
                         </div>
                     </div>
-                </div>
+                    </CardContent>
+                </Card>
                 )}
 
-                <div className="mt-8 overflow-hidden rounded-xl border border-slate-200/80 bg-white/90 shadow-sm">
+                <Card className="overflow-hidden border-slate-200/80 shadow-sm">
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
+                            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+                                <TableHead className="min-w-[220px]">Contact</TableHead>
                                 <TableHead>Account</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Phone</TableHead>
@@ -395,35 +438,96 @@ export const ContactsView = () => {
                         <TableBody>
                             {contacts === undefined ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                                    <TableCell colSpan={6} className="text-muted-foreground py-12 text-center">
                                         Loading…
                                     </TableCell>
                                 </TableRow>
                             ) : filteredContacts.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                        No contacts match this view
+                                    <TableCell colSpan={6} className="text-muted-foreground py-12 text-center">
+                                        {search ||
+                                        filterAccount !== "all" ||
+                                        filterHasEmail !== "all" ||
+                                        filterIndustry !== "all" ||
+                                        createdFrom ||
+                                        createdTo
+                                            ? "No contacts match these filters — adjust search or filters above."
+                                            : "No contacts yet. Add someone or import a CSV to get started."}
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 filteredContacts.map((contact: Contact) => {
-                                    const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
+                                    const fullName =
+                                        [contact.firstName, contact.lastName].filter(Boolean).join(" ") ||
+                                        contact.firstName;
                                     const account = contact.accountId ? accountMap.get(contact.accountId) : undefined;
+                                    const ini = initialsFor(contact.firstName, contact.lastName ?? undefined);
                                     return (
-                                        <TableRow key={contact._id}>
-                                            <TableCell className="font-medium">
-                                                <Link className="text-indigo-700 hover:underline" href={`/crm/contacts/${contact._id}`}>
-                                                    {fullName || "Contact"}
-                                                </Link>
+                                        <TableRow key={contact._id} className="group">
+                                            <TableCell>
+                                                <div className="flex items-start gap-3">
+                                                    <div
+                                                        className="flex size-10 shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-gradient-to-br from-indigo-100 to-white text-xs font-semibold text-indigo-900"
+                                                        aria-hidden
+                                                    >
+                                                        {ini}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <Link
+                                                            className="font-semibold text-indigo-800 hover:text-indigo-950 hover:underline"
+                                                            href={`/crm/contacts/${contact._id}`}
+                                                        >
+                                                            {fullName}
+                                                        </Link>
+                                                        {contact.title?.trim() ? (
+                                                            <p className="text-muted-foreground text-xs">{contact.title}</p>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
                                             </TableCell>
-                                            <TableCell>{account?.name ?? "—"}</TableCell>
-                                            <TableCell>{contact.email ?? "—"}</TableCell>
-                                            <TableCell>{contact.phone ?? "—"}</TableCell>
-                                            <TableCell>{contact.title ?? "—"}</TableCell>
+                                            <TableCell>
+                                                {account ? (
+                                                    <div className="flex flex-col gap-1">
+                                                        <Link
+                                                            href={`/crm/accounts/${account._id}`}
+                                                            className="inline-flex items-center gap-1 text-sm font-medium text-indigo-800 hover:underline"
+                                                        >
+                                                            <Building2Icon className="size-3.5 opacity-70" />
+                                                            {account.name}
+                                                        </Link>
+                                                        {account.industry?.trim() ? (
+                                                            <Badge variant="outline" className="w-fit font-normal text-xs">
+                                                                {account.industry}
+                                                            </Badge>
+                                                        ) : null}
+                                                    </div>
+                                                ) : (
+                                                    <Badge variant="secondary" className="font-normal">
+                                                        Unassigned
+                                                    </Badge>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {contact.email?.trim() ? (
+                                                    <a
+                                                        href={`mailto:${contact.email}`}
+                                                        className="text-sm text-indigo-700 hover:underline"
+                                                    >
+                                                        {contact.email}
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-muted-foreground">—</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="text-sm">{contact.phone ?? "—"}</TableCell>
+                                            <TableCell className="max-w-[160px] truncate text-sm">
+                                                {contact.title ?? "—"}
+                                            </TableCell>
                                             <TableCell className="text-right">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
+                                                    className="opacity-70 hover:opacity-100"
                                                     onClick={() => handleDelete(contact._id)}
                                                     aria-label={`Delete ${fullName}`}
                                                 >
@@ -436,7 +540,7 @@ export const ContactsView = () => {
                             )}
                         </TableBody>
                     </Table>
-                </div>
+                </Card>
             </div>
         </div>
     );

@@ -28,6 +28,11 @@ import {widgetSettingsSchema} from "../../schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Separator } from "@workspace/ui/components/separator";
 import { Input } from "@workspace/ui/components/input";
+import { Switch } from "@workspace/ui/components/switch";
+import {
+    Collapsible,
+    CollapsibleContent,
+} from "@workspace/ui/components/collapsible";
 import { VapiFormFields } from "./vapi-form-fields";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 
@@ -35,6 +40,34 @@ import { PlusIcon, Trash2Icon } from "lucide-react";
 
 type WidgetSettings = Doc<"widgetSettings">;
 
+const QUICK_REPLY_PLACEHOLDERS = [
+    "e.g., How do I get started?",
+    "e.g., What are your pricing plans?",
+    "e.g., I need help with my account",
+    "e.g., Book a demo",
+    "e.g., Talk to a human",
+];
+
+function initialQuickReplies(
+    data: WidgetSettings | null | undefined
+): { text: string }[] {
+    const trimmed = (s: string | undefined) => (s ?? "").trim();
+    const fromStored = data?.quickReplies
+        ?.map((s) => trimmed(s))
+        .filter((s) => s.length > 0);
+    if (fromStored && fromStored.length > 0) {
+        return fromStored.slice(0, 5).map((text) => ({ text }));
+    }
+    const legacy = [
+        trimmed(data?.defaultSuggestions?.suggestion1),
+        trimmed(data?.defaultSuggestions?.suggestion2),
+        trimmed(data?.defaultSuggestions?.suggestion3),
+    ].filter((s) => s.length > 0);
+    if (legacy.length > 0) {
+        return legacy.slice(0, 5).map((text) => ({ text }));
+    }
+    return [{ text: "" }];
+}
 
 interface CustomizationFormProps {
     initialData?: WidgetSettings | null;
@@ -53,11 +86,8 @@ export const CustomizationForm = ({
         defaultValues: {
             greetMessage:
             initialData?.greetMessage || "Hi! How can I help you today?",
-            defaultSuggestions: {
-                suggestion1: initialData?.defaultSuggestions.suggestion1 || "",
-                suggestion2: initialData?.defaultSuggestions.suggestion2 || "",
-                suggestion3: initialData?.defaultSuggestions.suggestion3 || "",
-            },
+            quickRepliesEnabled: initialData?.quickRepliesEnabled ?? true,
+            quickReplies: initialQuickReplies(initialData ?? null),
             vapiSettings: {
                 assistantId: initialData?.vapiSettings.assistantId || "",
                 phoneNumber: initialData?.vapiSettings.phoneNumber || "",
@@ -98,6 +128,11 @@ export const CustomizationForm = ({
     const newsFields = useFieldArray({
         control: form.control,
         name: "news",
+    })
+
+    const quickReplyFields = useFieldArray({
+        control: form.control,
+        name: "quickReplies",
     })
 
     const onSubmit = async(values: FormSchema) => {
@@ -148,9 +183,20 @@ export const CustomizationForm = ({
                 ? ""
                 : values.vapiSettings.phoneNumber
             };
+            const replyLines = values.quickReplies
+                .map((row) => row.text.trim())
+                .filter((s) => s.length > 0)
+                .slice(0, 5);
+
             await upsertWidgetSettings({
                 greetMessage: values.greetMessage,
-                defaultSuggestions: values.defaultSuggestions,
+                defaultSuggestions: {
+                    suggestion1: replyLines[0],
+                    suggestion2: replyLines[1],
+                    suggestion3: replyLines[2],
+                },
+                quickReplies: values.quickReplies.map((r) => r.text),
+                quickRepliesEnabled: values.quickRepliesEnabled,
                 vapiSettings,
                 widgetColor: values.widgetColor,
                 blogLinks: normalizedBlogLinks,
@@ -382,63 +428,133 @@ export const CustomizationForm = ({
 
                                 <Separator />
 
-                                <div>
-                                    <h3 className="mb-4 text-sm">
-                                        Default Suggestions
-                                    </h3>
-                                    <p className="mb-4 text-muted-foreground text-sm">
-                                        Quickly reply suggestions shown to customers to help guide the conversation
-                                    </p>
-                                    <div className="space-y-4">
-                                        <FormField
-                            control={form.control}
-                            name="defaultSuggestions.suggestion1"
-                            render={({field})=> (
-                                <FormItem>
-                                    <FormLabel>Suggestion 1</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                        {...field}
-                                        placeholder="e.g., How do I get started?"
-                                        />
-                                    </FormControl>
-
-                                    <FormMessage/>
-                                </FormItem>
-                            )}/>
-                            <FormField
-                            control={form.control}
-                            name="defaultSuggestions.suggestion2"
-                            render={({field})=> (
-                                <FormItem>
-                                    <FormLabel>Suggestion 2</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                        {...field}
-                                        placeholder="e.g., What are your pricing plans?"
-                                        />
-                                    </FormControl>
-
-                                    <FormMessage/>
-                                </FormItem>
-                            )}/>
-                            <FormField
-                            control={form.control}
-                            name="defaultSuggestions.suggestion3"
-                            render={({field})=> (
-                                <FormItem>
-                                    <FormLabel>Suggestion 3</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                        {...field}
-                                        placeholder="e.g., I need help with my account?"
-                                        />
-                                    </FormControl>
-
-                                    <FormMessage/>
-                                </FormItem>
-                            )}/>
+                                <div className="space-y-4">
+                                    <div>
+                                        <h3 className="text-sm font-medium">
+                                            Quick reply suggestions
+                                        </h3>
+                                        <p className="mt-1 text-muted-foreground text-sm">
+                                            Optional chips after the first assistant message. Visitors tap one to send it
+                                            instantly. Add up to five, in the order you want them to appear.
+                                        </p>
                                     </div>
+
+                                    <FormField
+                                        control={form.control}
+                                        name="quickRepliesEnabled"
+                                        render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border bg-muted/30 px-4 py-3">
+                                                <div className="space-y-1 pr-2">
+                                                    <FormLabel className="text-sm font-medium">
+                                                        Show suggestions in the widget
+                                                    </FormLabel>
+                                                    <FormDescription className="text-xs">
+                                                        Turn off to hide chips while keeping your text below for later.
+                                                    </FormDescription>
+                                                </div>
+                                                <FormControl>
+                                                    <Switch
+                                                        checked={field.value}
+                                                        onCheckedChange={(checked) => {
+                                                            field.onChange(checked);
+                                                            if (
+                                                                checked &&
+                                                                form.getValues("quickReplies")
+                                                                    .length === 0
+                                                            ) {
+                                                                quickReplyFields.append({
+                                                                    text: "",
+                                                                });
+                                                            }
+                                                        }}
+                                                    />
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <Collapsible open={form.watch("quickRepliesEnabled")}>
+                                        <CollapsibleContent className="space-y-4">
+                                            <p className="text-muted-foreground text-xs">
+                                                {quickReplyFields.fields.length} of 5 — first chip appears on the left
+                                                (or top on small screens).
+                                            </p>
+                                            <div className="space-y-3">
+                                                {quickReplyFields.fields.map(
+                                                    (arrField, index) => (
+                                                        <div
+                                                            key={arrField.id}
+                                                            className="flex items-start gap-3"
+                                                        >
+                                                            <span
+                                                                className="mt-2.5 w-6 shrink-0 text-center text-muted-foreground text-xs tabular-nums"
+                                                                aria-hidden
+                                                            >
+                                                                {index + 1}
+                                                            </span>
+                                                            <FormField
+                                                                control={
+                                                                    form.control
+                                                                }
+                                                                name={`quickReplies.${index}.text`}
+                                                                render={({
+                                                                    field,
+                                                                }) => (
+                                                                    <FormItem className="flex-1">
+                                                                        <FormLabel className="sr-only">
+                                                                            Suggestion{" "}
+                                                                            {index + 1}
+                                                                        </FormLabel>
+                                                                        <FormControl>
+                                                                            <Input
+                                                                                {...field}
+                                                                                placeholder={
+                                                                                    QUICK_REPLY_PLACEHOLDERS[
+                                                                                        index
+                                                                                    ] ??
+                                                                                    "Short reply text"
+                                                                                }
+                                                                            />
+                                                                        </FormControl>
+                                                                        <FormMessage />
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="mt-1 shrink-0 text-muted-foreground hover:text-destructive"
+                                                                onClick={() =>
+                                                                    quickReplyFields.remove(
+                                                                        index
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Trash2Icon className="size-4" />
+                                                            </Button>
+                                                        </div>
+                                                    )
+                                                )}
+                                            </div>
+                                            {quickReplyFields.fields.length <
+                                                5 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        quickReplyFields.append({
+                                                            text: "",
+                                                        })
+                                                    }
+                                                >
+                                                    <PlusIcon className="mr-2 size-4" />
+                                                    Add suggestion
+                                                </Button>
+                                            )}
+                                        </CollapsibleContent>
+                                    </Collapsible>
                                 </div>
 
                                 <Separator />
