@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { api } from "@workspace/backend/_generated/api";
 import type { Doc, Id } from "@workspace/backend/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -28,6 +29,7 @@ import {
     ChevronUpIcon,
     DollarSignIcon,
     KanbanIcon,
+    PencilIcon,
     PlusIcon,
     SearchIcon,
     Trash2Icon,
@@ -244,6 +246,7 @@ export const DealsView = () => {
             setAccountId("none");
             setContactId("none");
             setLeadId("none");
+            setShowCreateForm(false);
             toast.success("Deal created");
         } catch (e) {
             const message = e instanceof Error ? e.message : "Failed to create deal";
@@ -576,16 +579,32 @@ export const DealsView = () => {
                                                     >
                                                         <div className="flex items-start justify-between gap-2">
                                                             <p className="text-sm font-semibold leading-snug text-slate-900">{deal.name}</p>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="size-8 shrink-0 text-slate-500 hover:text-destructive"
-                                                                onClick={() => void handleDelete(deal._id)}
-                                                                aria-label={`Delete ${deal.name}`}
-                                                            >
-                                                                <Trash2Icon className="size-4" />
-                                                            </Button>
+                                                            <div className="flex shrink-0 items-center gap-0.5">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="size-8 text-slate-500 hover:text-indigo-600"
+                                                                    asChild
+                                                                >
+                                                                    <Link
+                                                                        href={`/crm/deals/${deal._id}/edit`}
+                                                                        aria-label={`Edit ${deal.name}`}
+                                                                    >
+                                                                        <PencilIcon className="size-4" />
+                                                                    </Link>
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="size-8 text-slate-500 hover:text-destructive"
+                                                                    onClick={() => void handleDelete(deal._id)}
+                                                                    aria-label={`Delete ${deal.name}`}
+                                                                >
+                                                                    <Trash2Icon className="size-4" />
+                                                                </Button>
+                                                            </div>
                                                         </div>
                                                         <p className="text-sm font-medium text-slate-800">{formatMoney(deal.amount)}</p>
                                                         <p className="text-xs text-slate-600">

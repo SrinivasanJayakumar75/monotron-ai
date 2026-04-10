@@ -136,12 +136,14 @@ export const BiDashboardView = () => {
     const [monthsBack, setMonthsBack] = useState<MonthsOption>(6);
     const [leadSourceFilter, setLeadSourceFilter] = useState<string>("all");
     const [dealStageFilter, setDealStageFilter] = useState<string>("all");
+    const [salesReportGrain, setSalesReportGrain] = useState<"day" | "month" | "year">("month");
     const [refreshNonce, setRefreshNonce] = useState(0);
     const crmSettings = useQuery(api.private.crmSettings.getOne, {});
     const data = useQuery(api.private.crmReports.getDashboardAnalytics, {
         monthsBack,
         refreshNonce,
     });
+    const salesReport = useQuery(api.private.sales.getTimeSeriesReport, { grain: salesReportGrain });
 
     const formatCurrency = useMemo(() => {
         const currency = normalizeCrmCurrencyCode(crmSettings?.defaultCurrency);
@@ -182,6 +184,11 @@ export const BiDashboardView = () => {
             deals: data.dealsOverTime[i]?.deals ?? 0,
         }));
     }, [data?.leadsOverTime, data?.dealsOverTime]);
+
+    const salesChartRows = useMemo(() => {
+        if (!salesReport?.series) return [];
+        return salesReport.series.map((s) => ({ label: s.label, total: s.total }));
+    }, [salesReport?.series]);
 
     const winRate =
         data && data.totals.deals > 0
@@ -426,6 +433,89 @@ export const BiDashboardView = () => {
                                                 />
                                             </PieChart>
                                         </ResponsiveContainer>
+                                    </div>
+                                </VisualChrome>
+                            </div>
+                        </section>
+
+                        <section className="grid gap-4 lg:grid-cols-12">
+                            <div className="lg:col-span-12">
+                                <VisualChrome
+                                    title="Sales report"
+                                    subtitle={
+                                        salesReport
+                                            ? `${salesReport.entryCount} logged ${
+                                                  salesReport.entryCount === 1 ? "entry" : "entries"
+                                              } in range · ${formatCurrency(salesReport.totalInRange)} total`
+                                            : "Recorded sales from CRM → Sales"
+                                    }
+                                >
+                                    <div className="mb-2 flex justify-end">
+                                        <div className="flex items-center gap-2 rounded-sm border border-[#edebe9] bg-[#faf9f8] px-2 py-1">
+                                            <span className="text-muted-foreground hidden text-[11px] sm:inline">
+                                                View by
+                                            </span>
+                                            <Select
+                                                value={salesReportGrain}
+                                                onValueChange={(v) =>
+                                                    setSalesReportGrain(v as "day" | "month" | "year")
+                                                }
+                                            >
+                                                <SelectTrigger className="h-8 w-[120px] border-0 bg-transparent text-xs shadow-none">
+                                                    <SelectValue placeholder="Period" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="day">Day</SelectItem>
+                                                    <SelectItem value="month">Month</SelectItem>
+                                                    <SelectItem value="year">Year</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    <div className="h-[260px] w-full min-h-[260px]">
+                                        {!salesReport ? (
+                                            <div className="flex h-full items-center justify-center text-sm text-[#605e5c]">
+                                                Loading sales…
+                                            </div>
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart
+                                                    data={salesChartRows}
+                                                    margin={{ top: 8, right: 8, left: 0, bottom: 28 }}
+                                                >
+                                                    <CartesianGrid {...gridStyle} />
+                                                    <XAxis
+                                                        dataKey="label"
+                                                        tick={axisStyle}
+                                                        interval={salesReportGrain === "day" ? 2 : 0}
+                                                        angle={salesReportGrain === "month" ? -16 : 0}
+                                                        textAnchor={
+                                                            salesReportGrain === "month" ? "end" : "middle"
+                                                        }
+                                                        height={salesReportGrain === "month" ? 40 : 28}
+                                                    />
+                                                    <YAxis tick={axisStyle} />
+                                                    <RechartsTooltip
+                                                        formatter={(value: number) => [
+                                                            formatCurrency(value),
+                                                            "Revenue",
+                                                        ]}
+                                                        contentStyle={{
+                                                            borderRadius: 4,
+                                                            border: "1px solid #edebe9",
+                                                            fontSize: 12,
+                                                        }}
+                                                    />
+                                                    <Bar
+                                                        dataKey="total"
+                                                        name="Revenue"
+                                                        fill="#00B294"
+                                                        radius={[2, 2, 0, 0]}
+                                                        maxBarSize={48}
+                                                    />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        )}
                                     </div>
                                 </VisualChrome>
                             </div>

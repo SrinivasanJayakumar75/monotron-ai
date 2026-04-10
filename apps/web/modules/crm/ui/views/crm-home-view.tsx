@@ -11,7 +11,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@workspace/ui/components/card";
-import { Building2Icon, CalendarIcon, MailIcon, PhoneIcon, SettingsIcon, UsersIcon, ActivityIcon, ClipboardListIcon, FileTextIcon, ReceiptIcon, LayersIcon, ShieldCheckIcon, SparklesIcon } from "lucide-react";
+import { Building2Icon, CalendarIcon, MailIcon, PhoneIcon, SettingsIcon, UsersIcon, ActivityIcon, ClipboardListIcon, FileTextIcon, ReceiptIcon, LayersIcon, ShieldCheckIcon, SparklesIcon, DollarSignIcon } from "lucide-react";
 import { useCrmCurrency } from "../../lib/use-crm-currency";
 
 type CrmModule = {
@@ -57,6 +57,12 @@ const modules: CrmModule[] = [
         href: "/crm/tasks",
         description: "Follow-ups and to-dos.",
         icon: ClipboardListIcon,
+    },
+    {
+        title: "Sales",
+        href: "/crm/sales",
+        description: "Log closed revenue and adjustments.",
+        icon: DollarSignIcon,
     },
     {
         title: "Events",

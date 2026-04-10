@@ -37,6 +37,18 @@ export const list = query({
     },
 });
 
+export const getOne = query({
+    args: { dealId: v.id("deals") },
+    handler: async (ctx, args) => {
+        const { orgId } = await requireCrmPermission(ctx, "read");
+        const deal = await ctx.db.get(args.dealId);
+        if (!deal || deal.organizationId !== orgId) {
+            return null;
+        }
+        return deal;
+    },
+});
+
 export const create = mutation({
     args: {
         accountId: v.optional(v.id("accounts")),
@@ -98,6 +110,87 @@ export const create = mutation({
             action: "create",
         });
         return dealId;
+    },
+});
+
+export const update = mutation({
+    args: {
+        dealId: v.id("deals"),
+        name: v.string(),
+        amount: v.number(),
+        stage: dealStageValidator,
+        closeDate: v.optional(v.number()),
+        probability: v.optional(v.number()),
+        accountId: v.optional(v.id("accounts")),
+        contactId: v.optional(v.id("contacts")),
+        leadId: v.optional(v.id("leads")),
+    },
+    handler: async (ctx, args) => {
+        const { orgId, userId } = await requireCrmPermission(ctx, "write");
+
+        const deal = await ctx.db.get(args.dealId);
+        if (!deal || deal.organizationId !== orgId) {
+            throw new ConvexError({ code: "NOT_FOUND", message: "Deal not found" });
+        }
+
+        if (args.accountId) {
+            const acc = await ctx.db.get(args.accountId);
+            if (!acc || acc.organizationId !== orgId) {
+                throw new ConvexError({ code: "UNAUTHORIZED", message: "Invalid account" });
+            }
+        }
+        if (args.contactId) {
+            const c = await ctx.db.get(args.contactId);
+            if (!c || c.organizationId !== orgId) {
+                throw new ConvexError({ code: "UNAUTHORIZED", message: "Invalid contact" });
+            }
+        }
+        if (args.leadId) {
+            const lead = await ctx.db.get(args.leadId);
+            if (!lead || lead.organizationId !== orgId) {
+                throw new ConvexError({ code: "UNAUTHORIZED", message: "Invalid lead" });
+            }
+        }
+
+        const trimmedName = args.name.trim();
+        if (!trimmedName) {
+            throw new ConvexError({ code: "BAD_REQUEST", message: "Deal name is required" });
+        }
+
+        await ctx.db.patch(args.dealId, {
+            name: trimmedName,
+            amount: args.amount,
+            stage: args.stage,
+            closeDate: args.closeDate,
+            probability: args.probability,
+            accountId: args.accountId,
+            contactId: args.contactId,
+            leadId: args.leadId,
+        });
+
+        if (deal.stage !== args.stage) {
+            await ctx.db.insert("dealStageHistory", {
+                organizationId: orgId,
+                dealId: args.dealId,
+                fromStage: deal.stage,
+                toStage: args.stage,
+                changedByUserId: userId,
+                changedAt: Date.now(),
+            });
+        }
+
+        await writeAuditEvent(ctx, {
+            organizationId: orgId,
+            userId,
+            entityType: "deal",
+            entityId: String(args.dealId),
+            action: deal.stage !== args.stage ? "stage_change" : "update",
+            changes: JSON.stringify({
+                name: trimmedName,
+                amount: args.amount,
+                stage: args.stage,
+            }),
+        });
     },
 });
 
