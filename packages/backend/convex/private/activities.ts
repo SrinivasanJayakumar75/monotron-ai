@@ -26,11 +26,12 @@ export const listByLead = query({
         }
         const rows = await ctx.db
             .query("activities")
-            .withIndex("by_related_lead_id", (q) => q.eq("relatedLeadId", args.leadId))
+            .withIndex("by_org_and_related_lead", (q) =>
+                q.eq("organizationId", orgId).eq("relatedLeadId", args.leadId),
+            )
+            .order("desc")
             .collect();
-        return rows
-            .filter((a) => a.organizationId === orgId)
-            .sort((a, b) => b._creationTime - a._creationTime);
+        return rows;
     },
 });
 
@@ -44,11 +45,12 @@ export const listByContact = query({
         }
         const rows = await ctx.db
             .query("activities")
-            .withIndex("by_related_contact_id", (q) => q.eq("relatedContactId", args.contactId))
+            .withIndex("by_org_and_related_contact", (q) =>
+                q.eq("organizationId", orgId).eq("relatedContactId", args.contactId),
+            )
+            .order("desc")
             .collect();
-        return rows
-            .filter((a) => a.organizationId === orgId)
-            .sort((a, b) => b._creationTime - a._creationTime);
+        return rows;
     },
 });
 
@@ -62,11 +64,12 @@ export const listByAccount = query({
         }
         const rows = await ctx.db
             .query("activities")
-            .withIndex("by_related_account_id", (q) => q.eq("relatedAccountId", args.accountId))
+            .withIndex("by_org_and_related_account", (q) =>
+                q.eq("organizationId", orgId).eq("relatedAccountId", args.accountId),
+            )
+            .order("desc")
             .collect();
-        return rows
-            .filter((a) => a.organizationId === orgId)
-            .sort((a, b) => b._creationTime - a._creationTime);
+        return rows;
     },
 });
 

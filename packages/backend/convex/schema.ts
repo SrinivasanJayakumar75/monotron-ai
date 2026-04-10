@@ -250,11 +250,15 @@ export default defineSchema({
         relatedContactId: v.optional(v.id("contacts")),
         relatedAccountId: v.optional(v.id("accounts")),
         assignee: v.optional(v.string()),
-    }).index("by_organization_id", ["organizationId"])
-      .index("by_organization_id_and_type", ["organizationId", "type"])
-      .index("by_related_lead_id", ["relatedLeadId"])
-      .index("by_related_contact_id", ["relatedContactId"])
-      .index("by_related_account_id", ["relatedAccountId"]),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_organization_id_and_type", ["organizationId", "type"])
+        .index("by_related_lead_id", ["relatedLeadId"])
+        .index("by_related_contact_id", ["relatedContactId"])
+        .index("by_related_account_id", ["relatedAccountId"])
+        .index("by_org_and_related_lead", ["organizationId", "relatedLeadId"])
+        .index("by_org_and_related_contact", ["organizationId", "relatedContactId"])
+        .index("by_org_and_related_account", ["organizationId", "relatedAccountId"]),
 
     notes: defineTable({
         organizationId: v.string(),
@@ -279,6 +283,29 @@ export default defineSchema({
         endAt: v.optional(v.number()),
         description: v.optional(v.string()),
     }).index("by_organization_id", ["organizationId"]),
+
+    /** Manual revenue / sales log (separate from deal pipeline). */
+    crmSalesEntries: defineTable({
+        organizationId: v.string(),
+        /** UTC midnight for the sale calendar day (YYYY-MM-DD from CRM form → UTC). */
+        saleDate: v.number(),
+        amount: v.number(),
+        title: v.optional(v.string()),
+        soldTo: v.optional(v.string()),
+        customerIndustry: v.optional(v.string()),
+        customerName: v.optional(v.string()),
+        companyName: v.optional(v.string()),
+        customerContact: v.optional(v.string()),
+        customerEmail: v.optional(v.string()),
+        customerWhatsapp: v.optional(v.string()),
+        notes: v.optional(v.string()),
+        dealId: v.optional(v.id("deals")),
+        accountId: v.optional(v.id("accounts")),
+        createdByUserId: v.string(),
+        createdAt: v.number(),
+    })
+        .index("by_organization_id", ["organizationId"])
+        .index("by_org_and_sale_date", ["organizationId", "saleDate"]),
 
     crmModuleItems: defineTable({
         organizationId: v.string(),
@@ -475,6 +502,7 @@ export default defineSchema({
     })
         .index("by_organization_id", ["organizationId"])
         .index("by_module_id", ["moduleId"]),
+
     users: defineTable({
         name: v.string(),
     }),

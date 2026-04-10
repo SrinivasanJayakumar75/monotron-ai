@@ -62,6 +62,7 @@ const crmModuleItems = [
     { title: "Contacts", url: "/crm/contacts" },
     { title: "Executive dashboard", url: "/dashboard" },
     { title: "Tasks", url: "/crm/tasks" },
+    { title: "Sales", url: "/crm/sales" },
     { title: "Events", url: "/crm/events" },
     { title: "Emails", url: "/crm/emails" },
     { title: "Calls", url: "/crm/calls" },
@@ -199,7 +200,8 @@ export const DashboardSidebar = () => {
                                             href={item.url}
                                             className={cn(
                                                 "block rounded-sm px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent",
-                                                pathname === item.url && "bg-sidebar-primary text-sidebar-primary-foreground"
+                                                (pathname === item.url || pathname.startsWith(`${item.url}/`)) &&
+                                                    "bg-sidebar-primary text-sidebar-primary-foreground",
                                             )}
                                         >
                                             {item.title}

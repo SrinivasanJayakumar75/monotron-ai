@@ -5,10 +5,12 @@ import {
     BookOpenIcon,
     BotIcon,
     GemIcon,
+    MailsIcon,
     MicIcon,
     PaletteIcon,
     PhoneIcon,
     UsersIcon,
+    WorkflowIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@workspace/ui/components/button";
@@ -50,6 +52,16 @@ const features: Feature[] = [
         icon: BookOpenIcon,
         label: "Knowledge Base",
         description: "Train AI on your documentation",
+    },
+    {
+        icon: WorkflowIcon,
+        label: "CRM",
+        description: "Leads, deals, contacts, and sales workflows",
+    },
+    {
+        icon: MailsIcon,
+        label: "Bulk email",
+        description: "Campaigns and high-volume email marketing",
     },
     {
         icon: UsersIcon,

@@ -249,6 +249,7 @@ export function CrmProfileActivitiesSection({
                             </div>
                             <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end md:flex-row md:items-center">
                                 <Select
+                                    key={`activity-status-${a._id}`}
                                     value={a.status}
                                     onValueChange={(v) =>
                                         void onActivityStatusChange(a._id, v as Doc<"activities">["status"])

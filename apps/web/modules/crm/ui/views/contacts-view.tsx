@@ -189,6 +189,7 @@ export const ContactsView = () => {
             setActivitySubject("");
             setActivityDescription("");
             setActivityDueDate("");
+            setShowCreateForm(false);
             toast.success("Contact created");
         } catch (e) {
             const message = e instanceof Error ? e.message : "Failed to create contact";
