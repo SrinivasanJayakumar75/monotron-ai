@@ -4,7 +4,7 @@ import { api } from "@workspace/backend/_generated/api";
 import type { Doc, Id } from "@workspace/backend/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -28,12 +28,21 @@ import {
 } from "@workspace/ui/components/table";
 import { Textarea } from "@workspace/ui/components/textarea";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@workspace/ui/components/dialog";
+import {
     Building2Icon,
     CalendarClockIcon,
     CheckSquareIcon,
     ListTodoIcon,
     MailIcon,
     PhoneIcon,
+    PencilIcon,
     SearchIcon,
     Trash2Icon,
     UserIcon,
@@ -70,6 +79,22 @@ function formatDueAt(dueAt?: number) {
         day: "numeric",
         year: "numeric",
     });
+}
+
+function dueAtToDateInput(dueAt?: number): string {
+    if (!dueAt) return "";
+    const d = new Date(dueAt);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+function parseDueAtInputOrNull(dateStr: string): number | null {
+    const trimmed = dateStr.trim();
+    if (!trimmed) return null;
+    const n = parseDueAtInput(dateStr);
+    return n === undefined ? null : n;
 }
 
 function activityTypeIcon(type: Activity["type"]) {
@@ -127,6 +152,7 @@ export const ActivitiesView = ({ type }: { type?: (typeof activityTypes)[number]
     const deals = useQuery(api.private.deals.list, {});
     const createActivity = useMutation(api.private.activities.create);
     const updateStatus = useMutation(api.private.activities.updateStatus);
+    const updateActivity = useMutation(api.private.activities.update);
     const removeActivity = useMutation(api.private.activities.remove);
 
     const [subject, setSubject] = useState("");
@@ -137,6 +163,14 @@ export const ActivitiesView = ({ type }: { type?: (typeof activityTypes)[number]
     const [linkContactId, setLinkContactId] = useState<string>("none");
     const [isCreating, setIsCreating] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
+    const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+    const [editSubject, setEditSubject] = useState("");
+    const [editDescription, setEditDescription] = useState("");
+    const [editDueAt, setEditDueAt] = useState("");
+    const [editStatus, setEditStatus] = useState<(typeof activityStatuses)[number]>("open");
+    const [editLinkAccountId, setEditLinkAccountId] = useState<string>("none");
+    const [editLinkContactId, setEditLinkContactId] = useState<string>("none");
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -281,6 +315,51 @@ export const ActivitiesView = ({ type }: { type?: (typeof activityTypes)[number]
         } catch (e) {
             const message = e instanceof Error ? e.message : "Failed to update status";
             toast.error(message);
+        }
+    };
+
+    useEffect(() => {
+        if (!editingActivity) return;
+        setEditSubject(editingActivity.subject);
+        setEditDescription(editingActivity.description ?? "");
+        setEditDueAt(dueAtToDateInput(editingActivity.dueAt));
+        setEditStatus(editingActivity.status);
+        setEditLinkAccountId(editingActivity.relatedAccountId ?? "none");
+        setEditLinkContactId(editingActivity.relatedContactId ?? "none");
+    }, [editingActivity]);
+
+    const handleSaveEdit = async () => {
+        if (!editingActivity) return;
+        const trimmed = editSubject.trim();
+        if (!trimmed) {
+            toast.error("Subject is required");
+            return;
+        }
+        const dueParsed = parseDueAtInputOrNull(editDueAt);
+        if (editDueAt.trim() && dueParsed === null) {
+            toast.error("Invalid due date");
+            return;
+        }
+        setIsSavingEdit(true);
+        try {
+            await updateActivity({
+                activityId: editingActivity._id,
+                subject: trimmed,
+                description: editDescription,
+                dueAt: dueParsed,
+                status: editStatus,
+                relatedAccountId:
+                    editLinkAccountId !== "none" ? (editLinkAccountId as Id<"accounts">) : null,
+                relatedContactId:
+                    editLinkContactId !== "none" ? (editLinkContactId as Id<"contacts">) : null,
+            });
+            setEditingActivity(null);
+            toast.success("Saved");
+        } catch (e) {
+            const message = e instanceof Error ? e.message : "Failed to save";
+            toast.error(message);
+        } finally {
+            setIsSavingEdit(false);
         }
     };
 
@@ -582,15 +661,26 @@ export const ActivitiesView = ({ type }: { type?: (typeof activityTypes)[number]
                                                 </Select>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="opacity-70 hover:opacity-100"
-                                                    onClick={() => handleDelete(a._id)}
-                                                    aria-label={`Delete ${a.subject}`}
-                                                >
-                                                    <Trash2Icon className="size-4 text-destructive" />
-                                                </Button>
+                                                <div className="flex justify-end gap-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="opacity-70 hover:opacity-100"
+                                                        onClick={() => setEditingActivity(a)}
+                                                        aria-label={`Edit ${a.subject}`}
+                                                    >
+                                                        <PencilIcon className="size-4 text-slate-700" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="opacity-70 hover:opacity-100"
+                                                        onClick={() => handleDelete(a._id)}
+                                                        aria-label={`Delete ${a.subject}`}
+                                                    >
+                                                        <Trash2Icon className="size-4 text-destructive" />
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -599,6 +689,124 @@ export const ActivitiesView = ({ type }: { type?: (typeof activityTypes)[number]
                         </TableBody>
                     </Table>
                 </Card>
+
+                <Dialog
+                    open={editingActivity !== null}
+                    onOpenChange={(open) => {
+                        if (!open) setEditingActivity(null);
+                    }}
+                >
+                    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>Edit {title.replace(/s$/, "").toLowerCase()}</DialogTitle>
+                            <DialogDescription>
+                                Update subject, notes, due date, status, and linked records. Lead or deal links on
+                                this activity are unchanged when you save.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-2">
+                            <div className="space-y-2">
+                                <Label>Subject</Label>
+                                <Input
+                                    value={editSubject}
+                                    onChange={(e) => setEditSubject(e.target.value)}
+                                    className="h-10"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Notes</Label>
+                                <Textarea
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    rows={3}
+                                    className="min-h-[88px] resize-y"
+                                />
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label>Due date</Label>
+                                    <Input
+                                        type="date"
+                                        value={editDueAt}
+                                        onChange={(e) => setEditDueAt(e.target.value)}
+                                        className="h-10"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Status</Label>
+                                    <Select
+                                        value={editStatus}
+                                        onValueChange={(v) => setEditStatus(v as (typeof activityStatuses)[number])}
+                                    >
+                                        <SelectTrigger className="h-10">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {activityStatuses.map((s) => (
+                                                <SelectItem key={s} value={s}>
+                                                    {formatStatusLabel(s)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <Building2Icon className="size-3.5 opacity-70" />
+                                        Link account
+                                    </Label>
+                                    <Select value={editLinkAccountId} onValueChange={setEditLinkAccountId}>
+                                        <SelectTrigger className="h-10">
+                                            <SelectValue placeholder="Optional" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            {(accounts ?? []).map((acc) => (
+                                                <SelectItem key={acc._id} value={acc._id}>
+                                                    {acc.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2">
+                                        <UserIcon className="size-3.5 opacity-70" />
+                                        Link contact
+                                    </Label>
+                                    <Select value={editLinkContactId} onValueChange={setEditLinkContactId}>
+                                        <SelectTrigger className="h-10">
+                                            <SelectValue placeholder="Optional" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            {(contacts ?? []).map((c) => (
+                                                <SelectItem key={c._id} value={c._id}>
+                                                    {contactLabel(c)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button type="button" variant="outline" onClick={() => setEditingActivity(null)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleSaveEdit}
+                                disabled={isSavingEdit}
+                                className={CRM_PRIMARY_BTN}
+                            >
+                                {isSavingEdit ? "Saving…" : "Save changes"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );

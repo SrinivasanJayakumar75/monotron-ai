@@ -189,6 +189,70 @@ export const updateStatus = mutation({
     },
 });
 
+export const update = mutation({
+    args: {
+        activityId: v.id("activities"),
+        subject: v.string(),
+        description: v.string(),
+        dueAt: v.union(v.number(), v.null()),
+        status: activityStatusValidator,
+        relatedAccountId: v.union(v.id("accounts"), v.null()),
+        relatedContactId: v.union(v.id("contacts"), v.null()),
+    },
+    handler: async (ctx, args) => {
+        const { orgId, userId } = await requireCrmPermission(ctx, "write");
+
+        const activity = await ctx.db.get(args.activityId);
+        if (!activity || activity.organizationId !== orgId) {
+            throw new ConvexError({ code: "NOT_FOUND", message: "Activity not found" });
+        }
+
+        const subject = args.subject.trim();
+        if (!subject) {
+            throw new ConvexError({ code: "BAD_REQUEST", message: "Subject is required" });
+        }
+
+        if (args.relatedAccountId) {
+            const account = await ctx.db.get(args.relatedAccountId);
+            if (!account || account.organizationId !== orgId) {
+                throw new ConvexError({ code: "UNAUTHORIZED", message: "Invalid account" });
+            }
+        }
+        if (args.relatedContactId) {
+            const contact = await ctx.db.get(args.relatedContactId);
+            if (!contact || contact.organizationId !== orgId) {
+                throw new ConvexError({ code: "UNAUTHORIZED", message: "Invalid contact" });
+            }
+        }
+
+        const desc = args.description.trim();
+        await ctx.db.patch(args.activityId, {
+            subject,
+            description: desc ? desc : undefined,
+            dueAt: args.dueAt === null ? undefined : args.dueAt,
+            status: args.status,
+            relatedAccountId: args.relatedAccountId === null ? undefined : args.relatedAccountId,
+            relatedContactId: args.relatedContactId === null ? undefined : args.relatedContactId,
+        });
+
+        await writeAuditEvent(ctx, {
+            organizationId: orgId,
+            userId,
+            entityType: "activity",
+            entityId: String(args.activityId),
+            action: "update",
+            changes: JSON.stringify({
+                subject,
+                hasDescription: Boolean(desc),
+                dueAt: args.dueAt,
+                status: args.status,
+                relatedAccountId: args.relatedAccountId,
+                relatedContactId: args.relatedContactId,
+            }),
+        });
+    },
+});
+
 export const remove = mutation({
     args: { activityId: v.id("activities") },
     handler: async (ctx, args) => {

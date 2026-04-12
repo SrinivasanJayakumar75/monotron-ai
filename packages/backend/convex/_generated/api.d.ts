@@ -10,7 +10,9 @@
 
 import type * as constants from "../constants.js";
 import type * as http from "../http.js";
+import type * as lib_bulkEmailBodyMarkdown from "../lib/bulkEmailBodyMarkdown.js";
 import type * as lib_bulkEmailTemplates from "../lib/bulkEmailTemplates.js";
+import type * as lib_bulkEmailThemes from "../lib/bulkEmailThemes.js";
 import type * as lib_extractTextContent from "../lib/extractTextContent.js";
 import type * as lib_googleAccessToken from "../lib/googleAccessToken.js";
 import type * as lib_secrets from "../lib/secrets.js";
@@ -85,7 +87,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   constants: typeof constants;
   http: typeof http;
+  "lib/bulkEmailBodyMarkdown": typeof lib_bulkEmailBodyMarkdown;
   "lib/bulkEmailTemplates": typeof lib_bulkEmailTemplates;
+  "lib/bulkEmailThemes": typeof lib_bulkEmailThemes;
   "lib/extractTextContent": typeof lib_extractTextContent;
   "lib/googleAccessToken": typeof lib_googleAccessToken;
   "lib/secrets": typeof lib_secrets;
