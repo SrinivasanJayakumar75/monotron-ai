@@ -12,10 +12,39 @@ const recipientValidator = v.object({
     company: v.optional(v.string()),
 });
 
+const socialLinkValidator = v.object({
+    platform: v.union(
+        v.literal("facebook"),
+        v.literal("twitter"),
+        v.literal("linkedin"),
+        v.literal("instagram"),
+        v.literal("youtube"),
+    ),
+    url: v.string(),
+});
+
+const emailThemeValidator = v.union(
+    v.literal("indigo"),
+    v.literal("coral"),
+    v.literal("royal"),
+    v.literal("lavender"),
+    v.literal("noir"),
+    v.literal("jade"),
+    v.literal("summit"),
+    v.literal("sunrise"),
+    v.literal("activation"),
+);
+
 const MAX_BULK = 2000;
 const SUBJECT_MAX = 500;
 const BODY_MAX = 100_000;
 const PREVIEW_TEXT_MAX = 200;
+const BUTTON_LABEL_MAX = 200;
+const BUTTON_URL_MAX = 2000;
+const BRAND_BAR_TITLE_MAX = 120;
+const PROMO_HEADLINE_MAX = 220;
+const PROMO_DISCOUNT_MAX = 24;
+const MAX_SOCIAL_LINKS = 5;
 const MIN_LEAD_MS = 60_000;
 const MAX_LEAD_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -24,7 +53,14 @@ export const scheduleSend = mutation({
         subject: v.string(),
         body: v.string(),
         previewText: v.optional(v.string()),
-        imageUrl: v.optional(v.string()),
+        imageStorageId: v.optional(v.id("_storage")),
+        buttonLabel: v.optional(v.string()),
+        buttonUrl: v.optional(v.string()),
+        socialLinks: v.optional(v.array(socialLinkValidator)),
+        emailTheme: v.optional(emailThemeValidator),
+        brandBarTitle: v.optional(v.string()),
+        promoHeadline: v.optional(v.string()),
+        promoDiscount: v.optional(v.string()),
         internalTitle: v.optional(v.string()),
         scheduledAt: v.number(),
         recipients: v.array(recipientValidator),
@@ -65,10 +101,61 @@ export const scheduleSend = mutation({
             throw new ConvexError({ code: "BAD_REQUEST", message: `Maximum ${MAX_BULK} recipients per batch` });
         }
 
-        const imageUrl = args.imageUrl?.trim();
-        if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
-            throw new ConvexError({ code: "BAD_REQUEST", message: "Image URL must start with http:// or https://" });
+        const btnLabel = (args.buttonLabel ?? "").trim();
+        const btnUrl = (args.buttonUrl ?? "").trim();
+        if (btnLabel && !btnUrl) {
+            throw new ConvexError({ code: "BAD_REQUEST", message: "Button link URL is required when a button label is set" });
         }
+        if (btnUrl && !btnLabel) {
+            throw new ConvexError({ code: "BAD_REQUEST", message: "Button label is required when a link URL is set" });
+        }
+        if (btnLabel.length > BUTTON_LABEL_MAX) {
+            throw new ConvexError({
+                code: "BAD_REQUEST",
+                message: `Button label must be at most ${BUTTON_LABEL_MAX} characters`,
+            });
+        }
+        if (btnUrl.length > BUTTON_URL_MAX) {
+            throw new ConvexError({
+                code: "BAD_REQUEST",
+                message: `Button URL must be at most ${BUTTON_URL_MAX} characters`,
+            });
+        }
+
+        const ribbon = (args.brandBarTitle ?? "").trim();
+        if (ribbon.length > BRAND_BAR_TITLE_MAX) {
+            throw new ConvexError({
+                code: "BAD_REQUEST",
+                message: `Ribbon title must be at most ${BRAND_BAR_TITLE_MAX} characters`,
+            });
+        }
+
+        const promoH = (args.promoHeadline ?? "").trim();
+        const promoD = (args.promoDiscount ?? "").trim();
+        if (promoH.length > PROMO_HEADLINE_MAX) {
+            throw new ConvexError({
+                code: "BAD_REQUEST",
+                message: `Promo headline must be at most ${PROMO_HEADLINE_MAX} characters`,
+            });
+        }
+        if (promoD.length > PROMO_DISCOUNT_MAX) {
+            throw new ConvexError({
+                code: "BAD_REQUEST",
+                message: `Promo discount label must be at most ${PROMO_DISCOUNT_MAX} characters`,
+            });
+        }
+
+        const socialIncoming = args.socialLinks ?? [];
+        if (socialIncoming.length > MAX_SOCIAL_LINKS) {
+            throw new ConvexError({
+                code: "BAD_REQUEST",
+                message: `At most ${MAX_SOCIAL_LINKS} social links`,
+            });
+        }
+        const socialLinksStored =
+            socialIncoming.length > 0
+                ? socialIncoming.map((s) => ({ platform: s.platform, url: s.url.trim() }))
+                : undefined;
 
         const id = await ctx.db.insert("scheduledBulkEmails", {
             organizationId: orgId,
@@ -77,7 +164,14 @@ export const scheduleSend = mutation({
             subject: subjectTpl,
             body: bodyTpl,
             previewText: previewTpl || undefined,
-            imageUrl: imageUrl || undefined,
+            imageStorageId: args.imageStorageId,
+            buttonLabel: btnLabel || undefined,
+            buttonUrl: btnUrl || undefined,
+            socialLinks: socialLinksStored,
+            emailTheme: args.emailTheme,
+            brandBarTitle: ribbon || undefined,
+            promoHeadline: promoH || undefined,
+            promoDiscount: promoD || undefined,
             recipients: args.recipients.map((r) => ({
                 email: r.email.trim().toLowerCase(),
                 firstName: r.firstName,

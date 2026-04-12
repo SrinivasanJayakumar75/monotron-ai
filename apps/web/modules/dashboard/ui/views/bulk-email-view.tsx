@@ -2,10 +2,17 @@
 
 import { api } from "@workspace/backend/_generated/api";
 import type { Id } from "@workspace/backend/_generated/dataModel";
+import { parseBulkEmailBodyStructure } from "@workspace/backend/lib/bulkEmailBodyMarkdown";
 import {
     BULK_EMAIL_TEMPLATES,
+    BULK_EMAIL_TEMPLATE_LIST,
     mergeBulkEmailTemplate,
 } from "@workspace/backend/lib/bulkEmailTemplates";
+import {
+    BULK_EMAIL_THEMES,
+    BULK_EMAIL_THEME_IDS,
+    type BulkEmailThemeId,
+} from "@workspace/backend/lib/bulkEmailThemes";
 import { useAction, useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { type ChangeEventHandler, useCallback, useMemo, useRef, useState } from "react";
@@ -55,6 +62,8 @@ import {
     MinusIcon,
     MousePointerClickIcon,
     SendIcon,
+    Share2Icon,
+    Trash2Icon,
     TypeIcon,
 } from "lucide-react";
 import {
@@ -67,8 +76,60 @@ import { BulkEmailRecipientsPickerCard } from "./bulk-email-recipients-picker-ca
 import { BulkEmailTemplateGallery } from "./bulk-email-template-gallery";
 
 const MAX_RECIPIENTS = 2000;
+const MAX_CAMPAIGN_IMAGE_BYTES = 8 * 1024 * 1024;
 const PREVIEW_TEXT_SOFT = 140;
 const PREVIEW_TEXT_HARD = 200;
+const BRAND_BAR_TITLE_MAX = 120;
+const PROMO_HEADLINE_MAX = 220;
+const PROMO_DISCOUNT_MAX = 24;
+
+/** Matches server default — shown when activation theme has no uploaded logo. */
+const BULK_LOGO_PLACEHOLDER_URL =
+    "https://placehold.co/200x52/f3f4f6/64748b/png?text=Your+logo";
+
+function previewBoldSegments(text: string, rich: boolean) {
+    if (!rich) return text;
+    const parts = text.split(/\*\*/);
+    return (
+        <>
+            {parts.map((part, idx) =>
+                idx % 2 === 1 ? (
+                    <strong key={`${idx}-${part.slice(0, 12)}`} className="font-bold text-emerald-700">
+                        {part}
+                    </strong>
+                ) : (
+                    <span key={`${idx}-n`}>{part}</span>
+                ),
+            )}
+        </>
+    );
+}
+
+async function uploadCampaignImageToStorage(
+    file: File,
+    getUploadUrl: () => Promise<string>,
+): Promise<Id<"_storage">> {
+    if (!file.type.startsWith("image/")) {
+        throw new Error("Please choose an image file (PNG, JPG, WebP, GIF, or SVG).");
+    }
+    if (file.size > MAX_CAMPAIGN_IMAGE_BYTES) {
+        throw new Error("Image must be 8MB or smaller.");
+    }
+    const postUrl = await getUploadUrl();
+    const result = await fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+    });
+    if (!result.ok) {
+        throw new Error("Image upload failed. Try again.");
+    }
+    const json = (await result.json()) as { storageId?: string };
+    if (!json.storageId) {
+        throw new Error("Image upload did not complete.");
+    }
+    return json.storageId as Id<"_storage">;
+}
 
 function toDatetimeLocalValue(d: Date): string {
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -91,6 +152,24 @@ const DEFAULT_SAMPLE: BulkRecipientInput = {
     lastName: "Jones",
     name: "Pat Jones",
     company: "Example Co",
+};
+
+type BulkSocialPlatform = "facebook" | "twitter" | "linkedin" | "instagram" | "youtube";
+
+const BULK_SOCIAL_ORDER: BulkSocialPlatform[] = [
+    "facebook",
+    "twitter",
+    "linkedin",
+    "instagram",
+    "youtube",
+];
+
+const BULK_SOCIAL_LABELS: Record<BulkSocialPlatform, string> = {
+    facebook: "Facebook",
+    twitter: "X (Twitter)",
+    linkedin: "LinkedIn",
+    instagram: "Instagram",
+    youtube: "YouTube",
 };
 
 function insertAtCursor(
@@ -118,17 +197,23 @@ type EditorTab = "edit" | "settings" | "send";
 
 export function BulkEmailView() {
     const fileRef = useRef<HTMLInputElement>(null);
+    const campaignImageInputRef = useRef<HTMLInputElement>(null);
     const bodyRef = useRef<HTMLTextAreaElement>(null);
     const subjectRef = useRef<HTMLInputElement>(null);
     const previewTextRef = useRef<HTMLTextAreaElement>(null);
+    const buttonLabelRef = useRef<HTMLInputElement>(null);
+    const buttonUrlRef = useRef<HTMLInputElement>(null);
+    const brandBarTitleRef = useRef<HTMLInputElement>(null);
+    const promoHeadlineRef = useRef<HTMLInputElement>(null);
+    const promoDiscountRef = useRef<HTMLInputElement>(null);
 
-    const templates = useQuery(api.private.bulkEmail.listTemplates);
     const crmRecipientsRaw = useQuery(api.private.bulkEmail.listCrmRecipientsForBulkEmail);
     const connection = useQuery(api.private.googleIntegration.getConnection);
     const upcomingScheduled = useQuery(api.private.scheduledBulkEmail.listMyUpcoming);
     const sendBulk = useAction(api.private.googleEmail.sendBulkEmails);
     const scheduleBulkSend = useMutation(api.private.scheduledBulkEmail.scheduleSend);
     const cancelScheduledSend = useMutation(api.private.scheduledBulkEmail.cancelSend);
+    const generateCampaignImageUploadUrl = useMutation(api.private.bulkEmail.generateBulkCampaignImageUploadUrl);
 
     const [composePhase, setComposePhase] = useState<"gallery" | "recipients" | "editor">("gallery");
     const [editorTab, setEditorTab] = useState<EditorTab>("edit");
@@ -139,13 +224,24 @@ export function BulkEmailView() {
     const [subject, setSubject] = useState("");
     const [previewText, setPreviewText] = useState("");
     const [body, setBody] = useState("");
-    const [imageUrl, setImageUrl] = useState("");
+    const [imageStorageId, setImageStorageId] = useState<Id<"_storage"> | null>(null);
+    const [buttonLabel, setButtonLabel] = useState("");
+    const [buttonUrl, setButtonUrl] = useState("");
+    const [brandBarTitle, setBrandBarTitle] = useState("");
+    const [promoHeadline, setPromoHeadline] = useState("");
+    const [promoDiscount, setPromoDiscount] = useState("");
+    const [emailTheme, setEmailTheme] = useState<BulkEmailThemeId>("indigo");
+    const [socialUrls, setSocialUrls] = useState<Record<BulkSocialPlatform, string>>({
+        facebook: "",
+        twitter: "",
+        linkedin: "",
+        instagram: "",
+        youtube: "",
+    });
     const [recipients, setRecipients] = useState<BulkRecipientInput[]>([]);
     const [fileLabel, setFileLabel] = useState("");
     const [sending, setSending] = useState(false);
     const [recipientSearch, setRecipientSearch] = useState("");
-    const [newTemplateName, setNewTemplateName] = useState("");
-    const [savingTemplate, setSavingTemplate] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [listOpen, setListOpen] = useState(false);
     const [language, setLanguage] = useState("en");
@@ -161,23 +257,33 @@ export function BulkEmailView() {
     const [crmTab, setCrmTab] = useState<"all" | "leads" | "contacts">("all");
     const [crmPickerSearch, setCrmPickerSearch] = useState("");
     const [crmPickerSelected, setCrmPickerSelected] = useState<string[]>([]);
-    const createTemplate = useMutation((api as any).private.bulkEmail.createTemplate);
+
+    const campaignImagePreviewUrl = useQuery(
+        api.private.bulkEmail.getCampaignImageUrl,
+        imageStorageId ? { storageId: imageStorageId } : "skip",
+    );
 
     const applyTemplate = useCallback((id: string) => {
-        if (id in BULK_EMAIL_TEMPLATES) {
-            const t = BULK_EMAIL_TEMPLATES[id as keyof typeof BULK_EMAIL_TEMPLATES];
-            setSubject(t.subject);
-            setBody(t.body);
-            return;
+        if (!(id in BULK_EMAIL_TEMPLATES)) return;
+        const t = BULK_EMAIL_TEMPLATES[id as keyof typeof BULK_EMAIL_TEMPLATES];
+        setSubject(t.subject);
+        setBody(t.body);
+        setEmailTheme(t.theme);
+        if (t.theme === "sunrise") {
+            setPromoHeadline(
+                id === "upgrade_promo"
+                    ? "Your chance to get the best price — limited time"
+                    : "",
+            );
+            setPromoDiscount(id === "upgrade_promo" ? "40%" : "");
+        } else {
+            setPromoHeadline("");
+            setPromoDiscount("");
         }
-        const custom = (templates ?? []).find((t) => t && t.id === id) as
-            | { subject?: string; body?: string }
-            | undefined;
-        if (custom && "subject" in custom && "body" in custom && custom.subject && custom.body) {
-            setSubject(custom.subject);
-            setBody(custom.body);
+        if (id === "service_activated") {
+            setButtonLabel("Open App");
         }
-    }, [templates]);
+    }, []);
 
     const onGallerySelect = (id: string) => {
         setTemplateId(id);
@@ -187,22 +293,28 @@ export function BulkEmailView() {
         toast.success("Layout applied — pick recipients from CRM or CSV next.");
     };
 
+    /** Built-ins always come from the web bundle so the gallery matches the app version (Convex deploy can lag). */
     const galleryItems = useMemo(() => {
-        if (!templates) return undefined;
-        return templates
-            .filter(Boolean)
-            .map((t) => ({
-                id: t!.id,
-                label: t!.label,
-                description: (t as { description?: string }).description,
-                category: (t as { category?: string }).category,
-                badge: (t as { badge?: string }).badge,
-            }));
-    }, [templates]);
+        return BULK_EMAIL_TEMPLATE_LIST.map((t) => {
+            const meta = BULK_EMAIL_TEMPLATES[t.id];
+            return {
+                id: t.id,
+                label: t.label,
+                description: meta.description,
+                category: meta.category,
+                badge: "badge" in meta ? meta.badge : undefined,
+                theme: BULK_EMAIL_THEMES[meta.theme].label,
+                themeId: meta.theme,
+            };
+        });
+    }, []);
 
-    const templateLabel =
-        templates?.find((t) => t?.id === templateId)?.label ??
-        (templateId.startsWith("custom:") ? "Custom template" : "Template");
+    const templateLabel = useMemo(() => {
+        if (templateId && templateId in BULK_EMAIL_TEMPLATES) {
+            return BULK_EMAIL_TEMPLATES[templateId as keyof typeof BULK_EMAIL_TEMPLATES].label;
+        }
+        return "Template";
+    }, [templateId]);
 
     const previewSample = recipients[0] ?? DEFAULT_SAMPLE;
 
@@ -227,6 +339,60 @@ export function BulkEmailView() {
             company: previewSample.company,
         }).subject;
     }, [previewText, previewSample]);
+
+    const previewButton = useMemo(() => {
+        const bl = buttonLabel.trim();
+        const bu = buttonUrl.trim();
+        if (!bl || !bu) return null;
+        return mergeBulkEmailTemplate({ subject: bl, body: bu }, {
+            email: previewSample.email,
+            firstName: previewSample.firstName,
+            lastName: previewSample.lastName,
+            name: previewSample.name,
+            company: previewSample.company,
+        });
+    }, [buttonLabel, buttonUrl, previewSample]);
+
+    const previewRibbonMerged = useMemo(() => {
+        const t = brandBarTitle.trim();
+        if (!t) return "";
+        return mergeBulkEmailTemplate({ subject: t, body: "" }, {
+            email: previewSample.email,
+            firstName: previewSample.firstName,
+            lastName: previewSample.lastName,
+            name: previewSample.name,
+            company: previewSample.company,
+        }).subject;
+    }, [brandBarTitle, previewSample]);
+
+    const previewPromoHeadMerged = useMemo(() => {
+        const t = promoHeadline.trim();
+        if (!t) return "";
+        return mergeBulkEmailTemplate({ subject: t, body: "" }, {
+            email: previewSample.email,
+            firstName: previewSample.firstName,
+            lastName: previewSample.lastName,
+            name: previewSample.name,
+            company: previewSample.company,
+        }).subject;
+    }, [promoHeadline, previewSample]);
+
+    const previewPromoDiscMerged = useMemo(() => {
+        const t = promoDiscount.trim();
+        if (!t) return "";
+        return mergeBulkEmailTemplate({ subject: t, body: "" }, {
+            email: previewSample.email,
+            firstName: previewSample.firstName,
+            lastName: previewSample.lastName,
+            name: previewSample.name,
+            company: previewSample.company,
+        }).subject;
+    }, [promoDiscount, previewSample]);
+
+    const previewBodyLayout = useMemo(
+        () => parseBulkEmailBodyStructure(preview.body),
+        [preview.body],
+    );
 
     const ingestCsvText = useCallback((text: string, sourceLabel: string) => {
         setFileLabel(sourceLabel);
@@ -284,6 +450,19 @@ export function BulkEmailView() {
         URL.revokeObjectURL(url);
     };
 
+    const onCampaignImagePick: ChangeEventHandler<HTMLInputElement> = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+        try {
+            const id = await uploadCampaignImageToStorage(file, () => generateCampaignImageUploadUrl());
+            setImageStorageId(id);
+            toast.success("Image added to your campaign");
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Could not upload image");
+        }
+    };
+
     const recipientPayload = useMemo(
         () =>
             recipients.map((r) => ({
@@ -295,6 +474,15 @@ export function BulkEmailView() {
             })),
         [recipients],
     );
+
+    const socialLinksPayload = useMemo(() => {
+        const out: { platform: BulkSocialPlatform; url: string }[] = [];
+        for (const key of BULK_SOCIAL_ORDER) {
+            const u = socialUrls[key].trim();
+            if (u) out.push({ platform: key, url: u });
+        }
+        return out.length > 0 ? out : undefined;
+    }, [socialUrls]);
 
     const handleSend = async () => {
         if (!connection) {
@@ -324,6 +512,40 @@ export function BulkEmailView() {
             return;
         }
 
+        const btnL = buttonLabel.trim();
+        const btnU = buttonUrl.trim();
+        if ((btnL && !btnU) || (!btnL && btnU)) {
+            toast.error("Set both button label and link URL, or leave both empty.");
+            setEditorTab("edit");
+            return;
+        }
+
+        const ribbon = brandBarTitle.trim();
+        if (ribbon.length > BRAND_BAR_TITLE_MAX) {
+            toast.error(`Ribbon title must be at most ${BRAND_BAR_TITLE_MAX} characters.`);
+            setEditorTab("edit");
+            return;
+        }
+
+        const pHead = promoHeadline.trim();
+        const pDisc = promoDiscount.trim();
+        if (pHead.length > PROMO_HEADLINE_MAX || pDisc.length > PROMO_DISCOUNT_MAX) {
+            toast.error(
+                `Promo headline must be at most ${PROMO_HEADLINE_MAX} characters and discount label at most ${PROMO_DISCOUNT_MAX}.`,
+            );
+            setEditorTab("edit");
+            return;
+        }
+
+        for (const key of BULK_SOCIAL_ORDER) {
+            const u = socialUrls[key].trim();
+            if (u && !/^https:\/\//i.test(u)) {
+                toast.error("Social links must start with https://");
+                setEditorTab("edit");
+                return;
+            }
+        }
+
         if (sendMode === "later") {
             const scheduledAt = new Date(scheduleAtLocal).getTime();
             if (Number.isNaN(scheduledAt) || scheduledAt < Date.now() + 60_000) {
@@ -336,7 +558,14 @@ export function BulkEmailView() {
                     subject: sub,
                     body: msg,
                     previewText: pre || undefined,
-                    imageUrl: imageUrl.trim() || undefined,
+                    imageStorageId: imageStorageId ?? undefined,
+                    buttonLabel: btnL || undefined,
+                    buttonUrl: btnU || undefined,
+                    socialLinks: socialLinksPayload,
+                    emailTheme,
+                    brandBarTitle: ribbon || undefined,
+                    promoHeadline: pHead || undefined,
+                    promoDiscount: pDisc || undefined,
                     internalTitle: internalTitle.trim() || undefined,
                     scheduledAt,
                     recipients: recipientPayload,
@@ -362,7 +591,14 @@ export function BulkEmailView() {
                 subject: sub,
                 body: msg,
                 previewText: pre || undefined,
-                imageUrl: imageUrl.trim() || undefined,
+                imageStorageId: imageStorageId ?? undefined,
+                buttonLabel: btnL || undefined,
+                buttonUrl: btnU || undefined,
+                socialLinks: socialLinksPayload,
+                emailTheme,
+                brandBarTitle: ribbon || undefined,
+                promoHeadline: pHead || undefined,
+                promoDiscount: pDisc || undefined,
                 recipients: recipientPayload,
             });
             const campaignLabel = internalTitle.trim() || templateLabel || "Bulk email";
@@ -471,11 +707,22 @@ export function BulkEmailView() {
     const recipientsReady = recipients.length > 0;
     const messageReady = subject.trim().length > 0 && body.trim().length > 0;
     const previewTextOk = previewText.trim().length <= PREVIEW_TEXT_HARD;
+    const buttonPairOk = (buttonLabel.trim() === "") === (buttonUrl.trim() === "");
+    const ribbonOk = brandBarTitle.trim().length <= BRAND_BAR_TITLE_MAX;
+    const promoOk =
+        promoHeadline.trim().length <= PROMO_HEADLINE_MAX && promoDiscount.trim().length <= PROMO_DISCOUNT_MAX;
     const scheduleTs = new Date(scheduleAtLocal).getTime();
     const scheduleTimeOk =
         sendMode === "now" ||
         (!Number.isNaN(scheduleTs) && scheduleTs >= Date.now() + 60_000);
-    const baseSendReady = connected && recipientsReady && messageReady && previewTextOk;
+    const baseSendReady =
+        connected &&
+        recipientsReady &&
+        messageReady &&
+        previewTextOk &&
+        buttonPairOk &&
+        ribbonOk &&
+        promoOk;
     const canSendNow = baseSendReady && !sending && sendMode === "now";
     const canScheduleSend = baseSendReady && !scheduling && sendMode === "later" && scheduleTimeOk;
     const canPrimarySendAction = sendMode === "now" ? canSendNow : canScheduleSend;
@@ -489,6 +736,17 @@ export function BulkEmailView() {
     }
     if (sendMode === "later" && !scheduleTimeOk) {
         sendBlockers.push("Pick a send time at least 1 minute from now (your device’s local time).");
+    }
+    if (!buttonPairOk) {
+        sendBlockers.push("Set both button label and link URL, or clear both (Compose)");
+    }
+    if (!ribbonOk) {
+        sendBlockers.push(`Ribbon title over ${BRAND_BAR_TITLE_MAX} characters (Compose)`);
+    }
+    if (!promoOk) {
+        sendBlockers.push(
+            `Promo headline or discount label too long (Compose) — max ${PROMO_HEADLINE_MAX} / ${PROMO_DISCOUNT_MAX}`,
+        );
     }
 
     const previewRemaining = PREVIEW_TEXT_SOFT - previewText.trim().length;
@@ -504,7 +762,9 @@ export function BulkEmailView() {
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    const mergePopover = (target: "body" | "subject" | "preview") => (
+    const mergePopover = (
+        target: "body" | "subject" | "preview" | "buttonLabel" | "buttonUrl" | "brandBarTitle" | "promoHeadline" | "promoDiscount",
+    ) => (
         <Popover>
             <PopoverTrigger asChild>
                 <Button type="button" variant="outline" size="sm" className="gap-1.5">
@@ -527,8 +787,18 @@ export function BulkEmailView() {
                                     insertAtCursor(bodyRef.current, s.value, body, setBody);
                                 } else if (target === "subject") {
                                     insertAtCursor(subjectRef.current, s.value, subject, setSubject);
-                                } else {
+                                } else if (target === "preview") {
                                     insertAtCursor(previewTextRef.current, s.value, previewText, setPreviewText);
+                                } else if (target === "buttonLabel") {
+                                    insertAtCursor(buttonLabelRef.current, s.value, buttonLabel, setButtonLabel);
+                                } else if (target === "brandBarTitle") {
+                                    insertAtCursor(brandBarTitleRef.current, s.value, brandBarTitle, setBrandBarTitle);
+                                } else if (target === "promoHeadline") {
+                                    insertAtCursor(promoHeadlineRef.current, s.value, promoHeadline, setPromoHeadline);
+                                } else if (target === "promoDiscount") {
+                                    insertAtCursor(promoDiscountRef.current, s.value, promoDiscount, setPromoDiscount);
+                                } else {
+                                    insertAtCursor(buttonUrlRef.current, s.value, buttonUrl, setButtonUrl);
                                 }
                             }}
                         >
@@ -742,8 +1012,105 @@ export function BulkEmailView() {
                             <aside className="w-full shrink-0 space-y-5 rounded-xl border border-violet-200/40 bg-white/90 p-4 shadow-sm ring-1 ring-slate-100 lg:w-60">
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-wide text-violet-800/70">Content</p>
-                                    <p className="text-muted-foreground mt-1 text-xs">Add blocks to your message (plain text + optional image).</p>
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        Rich layout: message, optional hero image, and a primary button (merge tags supported).
+                                    </p>
                                 </div>
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-slate-600">Email look</Label>
+                                    <Select
+                                        value={emailTheme}
+                                        onValueChange={(v) => setEmailTheme(v as BulkEmailThemeId)}
+                                        disabled={sending}
+                                    >
+                                        <SelectTrigger className="h-9 text-sm">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {BULK_EMAIL_THEME_IDS.map((id) => (
+                                                <SelectItem key={id} value={id}>
+                                                    {BULK_EMAIL_THEMES[id].label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-muted-foreground text-[10px] leading-snug">
+                                        {BULK_EMAIL_THEMES[emailTheme].tagline}
+                                    </p>
+                                </div>
+                                {BULK_EMAIL_THEMES[emailTheme].topHero === "brand_bar" ? (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-2">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <Label className="text-xs text-slate-600">Ribbon title</Label>
+                                                {mergePopover("brandBarTitle")}
+                                            </div>
+                                            <p className="text-muted-foreground text-[11px] leading-snug">
+                                                Shown in the dark top bar (your brand, not ours). Merge tags supported. Leave
+                                                blank for a neutral &quot;LIVE EVENT&quot; default.
+                                            </p>
+                                            <Input
+                                                ref={brandBarTitleRef}
+                                                value={brandBarTitle}
+                                                onChange={(e) => setBrandBarTitle(e.target.value)}
+                                                placeholder='e.g. Acme Live 2026 or {{company}}'
+                                                maxLength={BRAND_BAR_TITLE_MAX}
+                                                disabled={sending}
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
+                                    </>
+                                ) : null}
+                                {BULK_EMAIL_THEMES[emailTheme].topHero === "promo_sunrise" ? (
+                                    <>
+                                        <Separator />
+                                        <div className="space-y-3">
+                                            <div className="space-y-2">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <Label className="text-xs text-slate-600">Promo headline</Label>
+                                                    {mergePopover("promoHeadline")}
+                                                </div>
+                                                <p className="text-muted-foreground text-[11px] leading-snug">
+                                                    Large text on the yellow gradient (left). Merge tags OK. Empty defaults to a
+                                                    generic line.
+                                                </p>
+                                                <Input
+                                                    ref={promoHeadlineRef}
+                                                    value={promoHeadline}
+                                                    onChange={(e) => setPromoHeadline(e.target.value)}
+                                                    placeholder="Your chance to save — limited time"
+                                                    maxLength={PROMO_HEADLINE_MAX}
+                                                    disabled={sending}
+                                                    className="h-9 text-sm"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <Label className="text-xs text-slate-600">Discount badge</Label>
+                                                    {mergePopover("promoDiscount")}
+                                                </div>
+                                                <p className="text-muted-foreground text-[11px] leading-snug">
+                                                    Shown large on the right (e.g. 40% or $50).
+                                                </p>
+                                                <Input
+                                                    ref={promoDiscountRef}
+                                                    value={promoDiscount}
+                                                    onChange={(e) => setPromoDiscount(e.target.value)}
+                                                    placeholder="40%"
+                                                    maxLength={PROMO_DISCOUNT_MAX}
+                                                    disabled={sending}
+                                                    className="h-9 text-sm"
+                                                />
+                                            </div>
+                                            <p className="text-muted-foreground text-[11px] leading-snug">
+                                                Primary button appears in the hero and again in the green strip at the bottom —
+                                                set label + URL under Button below.
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : null}
+                                <Separator />
                                 <div className="grid grid-cols-2 gap-2">
                                     <Button
                                         type="button"
@@ -784,7 +1151,7 @@ export function BulkEmailView() {
                                         }
                                     >
                                         <MailIcon className="size-4 text-slate-500" />
-                                        CTA line
+                                        Reply prompt
                                     </Button>
                                     <Button
                                         type="button"
@@ -801,16 +1168,135 @@ export function BulkEmailView() {
                                 </div>
                                 <Separator />
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-slate-600">Image URL (optional)</Label>
-                                    <div className="flex items-center gap-2">
-                                        <ImageIcon className="text-muted-foreground size-4 shrink-0" />
-                                        <Input
-                                            value={imageUrl}
-                                            onChange={(e) => setImageUrl(e.target.value)}
-                                            placeholder="https://…"
+                                    <Label className="text-xs text-slate-600">
+                                        {BULK_EMAIL_THEMES[emailTheme].imageRole === "top_left_logo"
+                                            ? "Logo (optional)"
+                                            : "Hero image (optional)"}
+                                    </Label>
+                                    <p className="text-muted-foreground text-[11px] leading-snug">
+                                        {BULK_EMAIL_THEMES[emailTheme].imageRole === "top_left_logo"
+                                            ? "Upload your brand mark — it appears top-left. If you skip upload, a neutral “Your logo” placeholder is used."
+                                            : "Upload from your computer — shown at the top of the email."}
+                                    </p>
+                                    <input
+                                        ref={campaignImageInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="sr-only"
+                                        onChange={onCampaignImagePick}
+                                        disabled={sending}
+                                    />
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-9 gap-1.5"
                                             disabled={sending}
-                                            className="h-9 text-sm"
+                                            onClick={() => campaignImageInputRef.current?.click()}
+                                        >
+                                            <ImageIcon className="size-4" />
+                                            Upload image
+                                        </Button>
+                                        {imageStorageId ? (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-9 text-destructive hover:text-destructive"
+                                                disabled={sending}
+                                                onClick={() => setImageStorageId(null)}
+                                            >
+                                                <Trash2Icon className="size-4" />
+                                                Remove
+                                            </Button>
+                                        ) : null}
+                                    </div>
+                                    {imageStorageId && campaignImagePreviewUrl ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={campaignImagePreviewUrl}
+                                            alt=""
+                                            className={
+                                                BULK_EMAIL_THEMES[emailTheme].imageRole === "top_left_logo"
+                                                    ? "mt-1 max-h-14 w-auto rounded-md border border-slate-200 object-contain object-left"
+                                                    : "mt-1 max-h-28 w-full rounded-md border object-contain"
+                                            }
                                         />
+                                    ) : imageStorageId ? (
+                                        <p className="text-muted-foreground text-[11px]">Loading preview…</p>
+                                    ) : BULK_EMAIL_THEMES[emailTheme].imageRole === "top_left_logo" ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={BULK_LOGO_PLACEHOLDER_URL}
+                                            alt=""
+                                            className="mt-1 max-h-14 w-auto rounded-md border border-slate-200 object-contain opacity-90"
+                                        />
+                                    ) : null}
+                                </div>
+                                <Separator />
+                                <div className="space-y-2">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <Label className="text-xs text-slate-600">Button (optional)</Label>
+                                        {mergePopover("buttonLabel")}
+                                    </div>
+                                    <p className="text-muted-foreground text-[11px] leading-snug">
+                                        Label and link URL both required to show a button. URL must start with https:// after merge
+                                        tags.
+                                    </p>
+                                    <Input
+                                        ref={buttonLabelRef}
+                                        value={buttonLabel}
+                                        onChange={(e) => setButtonLabel(e.target.value)}
+                                        placeholder="e.g. Let's get started"
+                                        maxLength={200}
+                                        disabled={sending}
+                                        className="h-9 text-sm"
+                                    />
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <Label className="text-xs text-slate-600">Button link URL</Label>
+                                        {mergePopover("buttonUrl")}
+                                    </div>
+                                    <Input
+                                        ref={buttonUrlRef}
+                                        value={buttonUrl}
+                                        onChange={(e) => setButtonUrl(e.target.value)}
+                                        placeholder="https://yoursite.com/page"
+                                        maxLength={2000}
+                                        disabled={sending}
+                                        className="h-9 text-sm"
+                                    />
+                                </div>
+                                <Separator />
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-2">
+                                        <Share2Icon className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+                                        <div>
+                                            <Label className="text-xs text-slate-600">Social links (footer)</Label>
+                                            <p className="text-muted-foreground mt-0.5 text-[11px] leading-snug">
+                                                Optional &quot;Follow us on&quot; row above the disclaimer. Use full{" "}
+                                                <code className="rounded bg-slate-100 px-0.5">https://</code> profile URLs.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {BULK_SOCIAL_ORDER.map((key) => (
+                                            <div key={key} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                                                <span className="w-full shrink-0 text-[11px] font-medium text-slate-600 sm:w-28">
+                                                    {BULK_SOCIAL_LABELS[key]}
+                                                </span>
+                                                <Input
+                                                    value={socialUrls[key]}
+                                                    onChange={(e) =>
+                                                        setSocialUrls((prev) => ({ ...prev, [key]: e.target.value }))
+                                                    }
+                                                    placeholder="https://…"
+                                                    maxLength={2000}
+                                                    disabled={sending}
+                                                    className="h-9 flex-1 text-sm"
+                                                />
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                                 <Separator />
@@ -841,7 +1327,9 @@ export function BulkEmailView() {
                                         <CardDescription>
                                             Merge tags like{" "}
                                             <code className="rounded bg-slate-100 px-1">{"{{first_name}}"}</code> fill from
-                                            each recipient row.
+                                            each row. Start with <code className="rounded bg-slate-100 px-1"># Big headline</code>{" "}
+                                            or <code className="rounded bg-slate-100 px-1">&gt;&gt; Label</code> for a category pill
+                                            (like the reference templates).
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-0">
@@ -855,7 +1343,9 @@ export function BulkEmailView() {
                                                     id="bulk-email-body"
                                                     value={body}
                                                     onChange={(e) => setBody(e.target.value)}
-                                                    placeholder="Hi {{first_name}},&#10;&#10;…"
+                                                    placeholder={
+                                                        "# Thank you for your registration\n\nHi {{first_name}}, …"
+                                                    }
                                                     className="mt-2 min-h-[280px] resize-y border-slate-200 text-sm leading-relaxed"
                                                     disabled={sending}
                                                 />
@@ -881,18 +1371,251 @@ export function BulkEmailView() {
                                                 </>
                                             ) : null}
                                             <Separator className="my-4" />
-                                            <pre className="max-h-64 overflow-auto whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-800">
-                                                {preview.body}
-                                            </pre>
-                                            {imageUrl.trim() ? (
+                                            {BULK_EMAIL_THEMES[emailTheme].imageRole === "top_left_logo" ? (
+                                                <div className="mb-4 flex justify-start">
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
+                                                        src={
+                                                            campaignImagePreviewUrl ?? BULK_LOGO_PLACEHOLDER_URL
+                                                        }
+                                                        alt=""
+                                                        className="max-h-12 max-w-[220px] rounded border border-slate-200 object-contain object-left"
+                                                    />
+                                                </div>
+                                            ) : null}
+                                            {BULK_EMAIL_THEMES[emailTheme].topHero === "thin_bar" ? (
+                                                <div
+                                                    className="mb-4 h-2 w-full rounded-sm"
+                                                    style={{ background: BULK_EMAIL_THEMES[emailTheme].accent }}
+                                                />
+                                            ) : null}
+                                            {BULK_EMAIL_THEMES[emailTheme].topHero === "notify_check" ? (
+                                                <div
+                                                    className="flex justify-center py-6 text-5xl font-light leading-none text-white"
+                                                    style={{ background: BULK_EMAIL_THEMES[emailTheme].accent }}
+                                                >
+                                                    &#10003;
+                                                </div>
+                                            ) : null}
+                                            {BULK_EMAIL_THEMES[emailTheme].topHero === "verify_panel" ? (
+                                                <div
+                                                    className="flex flex-col items-center py-5 text-white"
+                                                    style={{ background: BULK_EMAIL_THEMES[emailTheme].accent }}
+                                                >
+                                                    <span className="text-[10px] font-bold tracking-[0.22em] opacity-95">
+                                                        VERIFY YOUR EMAIL
+                                                    </span>
+                                                    <span className="mt-2 text-4xl leading-none">&#9993;</span>
+                                                </div>
+                                            ) : null}
+                                            {BULK_EMAIL_THEMES[emailTheme].topHero === "brand_bar" ? (
+                                                <div className="flex justify-center bg-slate-900 py-3">
+                                                    <span className="text-center text-[10px] font-extrabold uppercase tracking-[0.35em] text-slate-100">
+                                                        {previewRibbonMerged.trim() || "LIVE EVENT"}
+                                                    </span>
+                                                </div>
+                                            ) : null}
+                                            {BULK_EMAIL_THEMES[emailTheme].topHero === "promo_sunrise" ? (
+                                                <div className="mb-4 overflow-hidden rounded-lg ring-1 ring-amber-400/40">
+                                                    <div
+                                                        className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 px-3 py-4 sm:px-4"
+                                                        style={{
+                                                            background:
+                                                                "linear-gradient(127deg,#ffeb3b 0%,#fff176 28%,#ffb74d 72%,#f57c00 100%)",
+                                                        }}
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-extrabold leading-snug text-slate-900 sm:text-base">
+                                                                {previewPromoHeadMerged.trim() ||
+                                                                    "Your best offer is waiting"}
+                                                            </p>
+                                                            {previewButton ? (
+                                                                <span
+                                                                    className="mt-3 inline-block rounded-full px-4 py-2 text-xs font-bold text-white sm:text-sm"
+                                                                    style={{
+                                                                        background:
+                                                                            BULK_EMAIL_THEMES[emailTheme].accent,
+                                                                    }}
+                                                                >
+                                                                    {previewButton.subject}
+                                                                </span>
+                                                            ) : (
+                                                                <p className="text-muted-foreground mt-2 text-[11px]">
+                                                                    Add a button below to show the green CTA here.
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex shrink-0 flex-col items-center justify-center px-1">
+                                                            <span className="text-3xl font-black tabular-nums leading-none text-slate-900 sm:text-4xl">
+                                                                {previewPromoDiscMerged.trim() || "40%"}
+                                                            </span>
+                                                            <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-900">
+                                                                Save
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : null}
+                                            {BULK_EMAIL_THEMES[emailTheme].imageRole !== "top_left_logo" &&
+                                            campaignImagePreviewUrl ? (
                                                 <>
                                                     <Separator className="my-4" />
                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                                     <img
-                                                        src={imageUrl}
+                                                        src={campaignImagePreviewUrl}
                                                         alt=""
-                                                        className="max-h-40 w-auto max-w-full rounded-lg border"
+                                                        className="max-h-40 w-full rounded-lg border object-contain"
                                                     />
+                                                </>
+                                            ) : null}
+                                            <Separator className="my-4" />
+                                            {previewBodyLayout.kicker ? (
+                                                <span
+                                                    className="mb-3 inline-block rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
+                                                    style={{
+                                                        background: `${BULK_EMAIL_THEMES[emailTheme].accent}22`,
+                                                        color: BULK_EMAIL_THEMES[emailTheme].accent,
+                                                    }}
+                                                >
+                                                    {previewBodyLayout.kicker}
+                                                </span>
+                                            ) : null}
+                                            {previewBodyLayout.headline ? (
+                                                <p
+                                                    className={`mb-2 text-2xl font-extrabold leading-tight tracking-tight text-slate-900 ${
+                                                        BULK_EMAIL_THEMES[emailTheme].headlineAlign === "center"
+                                                            ? "text-center"
+                                                            : ""
+                                                    }`}
+                                                >
+                                                    {previewBodyLayout.headline}
+                                                </p>
+                                            ) : null}
+                                            {previewBodyLayout.subhead ? (
+                                                <p className="text-muted-foreground mb-4 text-base font-semibold">
+                                                    {previewBodyLayout.subhead}
+                                                </p>
+                                            ) : null}
+                                            <div className="max-h-64 overflow-auto font-sans text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
+                                                {previewBoldSegments(
+                                                    previewBodyLayout.body ||
+                                                        (!previewBodyLayout.headline ? preview.body : ""),
+                                                    Boolean(BULK_EMAIL_THEMES[emailTheme].richBodyBoldAccent),
+                                                )}
+                                            </div>
+                                            {previewBodyLayout.footerNote ? (
+                                                <p className="mt-4 text-[13px] leading-snug text-slate-500">
+                                                    {previewBoldSegments(
+                                                        previewBodyLayout.footerNote,
+                                                        Boolean(BULK_EMAIL_THEMES[emailTheme].richBodyBoldAccent),
+                                                    )}
+                                                </p>
+                                            ) : null}
+                                            {previewButton && !BULK_EMAIL_THEMES[emailTheme].skipMidCta ? (
+                                                <>
+                                                    <Separator className="my-4" />
+                                                    <p className="text-muted-foreground text-[10px] font-bold uppercase">
+                                                        Button
+                                                    </p>
+                                                    <div className="mt-3 flex justify-center">
+                                                        <span
+                                                            className="inline-block rounded-full px-6 py-2.5 text-sm font-semibold text-white"
+                                                            style={{
+                                                                background:
+                                                                    BULK_EMAIL_THEMES[emailTheme].ctaStyle === "outline"
+                                                                        ? "transparent"
+                                                                        : BULK_EMAIL_THEMES[emailTheme].accent,
+                                                                color:
+                                                                    BULK_EMAIL_THEMES[emailTheme].ctaStyle === "outline"
+                                                                        ? BULK_EMAIL_THEMES[emailTheme].ctaOutlineFg
+                                                                        : "#fff",
+                                                                border:
+                                                                    BULK_EMAIL_THEMES[emailTheme].ctaStyle === "outline"
+                                                                        ? `2px solid ${BULK_EMAIL_THEMES[emailTheme].ctaOutlineBorder}`
+                                                                        : "none",
+                                                            }}
+                                                        >
+                                                            {previewButton.subject}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-muted-foreground mt-2 break-all text-xs">
+                                                        → {previewButton.body}
+                                                    </p>
+                                                </>
+                                            ) : null}
+                                            {previewButton && BULK_EMAIL_THEMES[emailTheme].closingBanner ? (
+                                                <>
+                                                    <Separator className="my-4" />
+                                                    <div
+                                                        className="rounded-lg px-4 py-5 text-center text-white"
+                                                        style={{
+                                                            background: BULK_EMAIL_THEMES[emailTheme].accent,
+                                                        }}
+                                                    >
+                                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/90">
+                                                            {BULK_EMAIL_THEMES[emailTheme].closingBannerEyebrow ??
+                                                                "JOIN US"}
+                                                        </p>
+                                                        <p className="mt-2 text-sm leading-snug text-white/95">
+                                                            {BULK_EMAIL_THEMES[emailTheme].closingBannerBody ??
+                                                                "Limited seats — use the same link if you still need to register."}
+                                                        </p>
+                                                        <div className="mt-4 flex justify-center">
+                                                            <span
+                                                                className="inline-block rounded-full bg-white px-6 py-2 text-sm font-bold"
+                                                                style={{
+                                                                    color: BULK_EMAIL_THEMES[emailTheme].accent,
+                                                                }}
+                                                            >
+                                                                {previewButton.subject}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            ) : null}
+                                            {socialLinksPayload ? (
+                                                <>
+                                                    <Separator className="my-4" />
+                                                    <div
+                                                        className={
+                                                            BULK_EMAIL_THEMES[emailTheme].socialFooterOnDark
+                                                                ? "rounded-lg border border-slate-800 bg-slate-950 px-4 py-3"
+                                                                : "rounded-lg border border-slate-200 bg-slate-50 px-4 py-3"
+                                                        }
+                                                    >
+                                                        <p
+                                                            className={
+                                                                BULK_EMAIL_THEMES[emailTheme].socialFooterOnDark
+                                                                    ? "text-center text-[10px] font-bold uppercase tracking-wide text-slate-400"
+                                                                    : "text-center text-[10px] font-bold uppercase tracking-wide text-slate-500"
+                                                            }
+                                                        >
+                                                            Follow us on
+                                                        </p>
+                                                        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
+                                                            {socialLinksPayload.map(({ platform, url }) => (
+                                                                <span
+                                                                    key={platform}
+                                                                    className={
+                                                                        BULK_EMAIL_THEMES[emailTheme].socialFooterOnDark
+                                                                            ? "font-semibold text-slate-200 underline decoration-slate-500"
+                                                                            : "font-semibold text-indigo-600 underline decoration-indigo-300"
+                                                                    }
+                                                                >
+                                                                    {BULK_SOCIAL_LABELS[platform]}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <p
+                                                            className={
+                                                                BULK_EMAIL_THEMES[emailTheme].socialFooterOnDark
+                                                                    ? "mt-2 text-center text-[10px] text-slate-500"
+                                                                    : "text-muted-foreground mt-2 text-center text-[10px]"
+                                                            }
+                                                        >
+                                                            Links open your profile URLs in the real send.
+                                                        </p>
+                                                    </div>
                                                 </>
                                             ) : null}
                                         </div>
@@ -1030,53 +1753,6 @@ export function BulkEmailView() {
                                         </CollapsibleContent>
                                     </Collapsible>
 
-                                    <Separator />
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="new-template-name">Save as reusable template</Label>
-                                        <div className="flex flex-col gap-2 sm:flex-row">
-                                            <Input
-                                                id="new-template-name"
-                                                className="flex-1"
-                                                value={newTemplateName}
-                                                onChange={(e) => setNewTemplateName(e.target.value)}
-                                                placeholder="Template name"
-                                                disabled={savingTemplate || sending}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                disabled={savingTemplate || sending}
-                                                onClick={async () => {
-                                                    const label = newTemplateName.trim();
-                                                    if (!label) {
-                                                        toast.error("Enter a template name");
-                                                        return;
-                                                    }
-                                                    if (!subject.trim() || !body.trim()) {
-                                                        toast.error("Need subject and body first");
-                                                        return;
-                                                    }
-                                                    setSavingTemplate(true);
-                                                    try {
-                                                        await createTemplate({
-                                                            label,
-                                                            subject: subject.trim(),
-                                                            body: body.trim(),
-                                                        });
-                                                        setNewTemplateName("");
-                                                        toast.success("Template saved to My templates");
-                                                    } catch (err) {
-                                                        toast.error(err instanceof Error ? err.message : "Save failed");
-                                                    } finally {
-                                                        setSavingTemplate(false);
-                                                    }
-                                                }}
-                                            >
-                                                {savingTemplate ? "Saving…" : "Save"}
-                                            </Button>
-                                        </div>
-                                    </div>
                                 </CardContent>
                             </Card>
                         </div>

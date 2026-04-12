@@ -327,6 +327,22 @@ export default defineSchema({
         amount: v.optional(v.number()),
         dueAt: v.optional(v.number()),
         details: v.optional(v.string()),
+        sku: v.optional(v.string()),
+        productDescription: v.optional(v.string()),
+        productUrl: v.optional(v.string()),
+        unitPrice: v.optional(v.number()),
+        unitCost: v.optional(v.number()),
+        productType: v.optional(
+            v.union(
+                v.literal("inventory"),
+                v.literal("non_inventory"),
+                v.literal("service"),
+            ),
+        ),
+        /** On-hand quantity for inventory-style products (optional). */
+        stockQuantity: v.optional(v.number()),
+        /** Product photo stored in Convex file storage (set via file upload, not a public URL field). */
+        productImageId: v.optional(v.id("_storage")),
         createdAt: v.number(),
     })
         .index("by_organization_id", ["organizationId"])
@@ -535,7 +551,45 @@ export default defineSchema({
         subject: v.string(),
         body: v.string(),
         previewText: v.optional(v.string()),
-        imageUrl: v.optional(v.string()),
+        /** Hero image from Convex file storage (upload in composer). */
+        imageStorageId: v.optional(v.id("_storage")),
+        /** Optional CTA — merge tags supported; URL must be https:// after merge. */
+        buttonLabel: v.optional(v.string()),
+        buttonUrl: v.optional(v.string()),
+        /** Optional footer social links (https URLs). */
+        socialLinks: v.optional(
+            v.array(
+                v.object({
+                    platform: v.union(
+                        v.literal("facebook"),
+                        v.literal("twitter"),
+                        v.literal("linkedin"),
+                        v.literal("instagram"),
+                        v.literal("youtube"),
+                    ),
+                    url: v.string(),
+                }),
+            ),
+        ),
+        /** HTML palette: colors, top bar, pill vs outline CTA. */
+        emailTheme: v.optional(
+            v.union(
+                v.literal("indigo"),
+                v.literal("coral"),
+                v.literal("royal"),
+                v.literal("lavender"),
+                v.literal("noir"),
+                v.literal("jade"),
+                v.literal("summit"),
+                v.literal("sunrise"),
+                v.literal("activation"),
+            ),
+        ),
+        /** Dark top ribbon for event (brand_bar) themes — merge tags supported. */
+        brandBarTitle: v.optional(v.string()),
+        /** Sunrise promo hero — merge tags supported. */
+        promoHeadline: v.optional(v.string()),
+        promoDiscount: v.optional(v.string()),
         recipients: v.array(
             v.object({
                 email: v.string(),

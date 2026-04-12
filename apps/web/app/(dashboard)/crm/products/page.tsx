@@ -6,7 +6,7 @@ const Page = () => {
             module="products"
             title="Products"
             description="Maintain product catalog entries used across CRM sales modules."
-            statuses={["active", "inactive", "archived"]}
+            statuses={["active", "inactive"]}
         />
     );
 };
