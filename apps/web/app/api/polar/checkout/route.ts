@@ -1,5 +1,5 @@
 import { Checkout } from "@polar-sh/nextjs";
-import { type NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ??
@@ -22,5 +22,20 @@ export async function GET(req: NextRequest) {
             { status: 503 },
         );
     }
-    return polarCheckout(req);
+    const productId =
+        process.env.POLAR_PRO_PRODUCT_ID?.trim() ||
+        process.env.NEXT_PUBLIC_POLAR_PRO_PRODUCT_ID?.trim();
+    if (!productId) {
+        return NextResponse.json(
+            { error: "POLAR_PRO_PRODUCT_ID is not set in server env." },
+            { status: 503 },
+        );
+    }
+
+    const url = new URL(req.url);
+    if (url.searchParams.getAll("products").length === 0) {
+        url.searchParams.set("products", productId);
+    }
+    const rewrittenReq = new NextRequest(url.toString(), req);
+    return polarCheckout(rewrittenReq);
 }
