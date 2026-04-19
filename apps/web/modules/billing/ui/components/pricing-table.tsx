@@ -13,15 +13,10 @@ import {
 import { Check } from "lucide-react";
 import Link from "next/link";
 
-function buildCheckoutHref(orgId: string, email?: string | null): string | null {
-    const productId = process.env.NEXT_PUBLIC_POLAR_PRO_PRODUCT_ID;
-    if (!productId) {
-        return null;
-    }
+function buildCheckoutHref(orgId: string, email?: string | null): string {
     // Use raw JSON here — URLSearchParams encodes once. Do not pre-encode or metadata
     // becomes double-encoded (%257B…) and Polar's JSON.parse(metadata) fails → HTTP 500.
     const params = new URLSearchParams();
-    params.set("products", productId);
     params.set("customerExternalId", orgId);
     params.set("metadata", JSON.stringify({ clerk_organization_id: orgId }));
     if (email) {
@@ -100,14 +95,9 @@ export const PricingTable = () => {
                         <Button className="w-full" asChild size="lg">
                             <Link href="/org-selection">Choose an organization</Link>
                         </Button>
-                    ) : !checkoutHref ? (
-                        <p className="text-sm text-muted-foreground text-center">
-                            Set <span className="font-mono">NEXT_PUBLIC_POLAR_PRO_PRODUCT_ID</span>{" "}
-                            to your Polar product UUID to enable checkout.
-                        </p>
                     ) : (
                         <Button className="w-full" asChild size="lg">
-                            <Link href={checkoutHref}>Upgrade with Polar</Link>
+                            <Link href={checkoutHref!}>Upgrade with Polar</Link>
                         </Button>
                     )}
                 </CardFooter>
