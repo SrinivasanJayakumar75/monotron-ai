@@ -2,8 +2,57 @@ import {httpRouter} from "convex/server";
 import { createClerkClient } from "@clerk/backend";
 import type {WebhookEvent} from "@clerk/backend";
 import {Webhook} from "svix";
+import { validateEvent, WebhookVerificationError } from "@polar-sh/sdk/webhooks";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+
+const POLAR_SUBSCRIPTION_EVENTS = new Set([
+    "subscription.updated",
+    "subscription.created",
+    "subscription.active",
+    "subscription.canceled",
+    "subscription.revoked",
+    "subscription.uncanceled",
+    "subscription.past_due",
+]);
+
+type PolarSubscriptionPayload = {
+    status: string;
+    metadata?: Record<string, unknown>;
+    customer?: { externalId?: string | null };
+};
+
+function polarHeaders(request: Request): Record<string, string> {
+    const headers: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+        headers[key] = value;
+    });
+    return headers;
+}
+
+function resolveClerkOrganizationId(sub: PolarSubscriptionPayload): string | null {
+    const meta = sub.metadata ?? {};
+    const fromMeta = meta.clerk_organization_id ?? meta.clerkOrganizationId;
+    if (typeof fromMeta === "string" && fromMeta.length > 0) {
+        return fromMeta;
+    }
+    const ext = sub.customer?.externalId;
+    if (typeof ext === "string" && ext.length > 0) {
+        return ext;
+    }
+    return null;
+}
+
+function convexStatusFromPolar(status: string): string {
+    if (status === "active" || status === "trialing") {
+        return "active";
+    }
+    return status;
+}
+
+function seatCapForPolarStatus(status: string): number {
+    return status === "active" || status === "trialing" ? 5 : 1;
+}
 
 function weakHash(s: string) {
     let h = 0;
@@ -182,45 +231,58 @@ http.route({
 http.route({
     path: "/clerk-webhook",
     method: "POST",
-    handler: httpAction(async (ctx, request)=> {
+    handler: httpAction(async (_ctx, request)=> {
         const event = await validateRequest(request);
 
         if(!event){
             return new Response("Error occured", {status: 400});
         }
 
-        switch (event.type){
-            case "subscription.updated": {
-                const subscription = event.data as {
-                    status: string;
-                    payer?: {
-                        organization_id: string;
-                    }
-                }
-                const organizationId = subscription.payer?.organization_id;
-
-                if(!organizationId){
-                    return new Response("Missing Organization ID", {status: 400})
-                }
-
-                const newMaxAllowedMemberships = subscription.status === "active" ? 5 : 1;
-
-                await clerkClient.organizations.updateOrganization(organizationId, {
-                    maxAllowedMemberships: newMaxAllowedMemberships
-                });
-
-                await ctx.runMutation(internal.system.subscriptions.upsert, {
-                    organizationId,
-                    status: subscription.status,
-                });
-
-
-                break;
-            }
-            default:
-                console.log("Ignored Clerk webhook event", event.type);
-        }
+        console.log("Clerk webhook received", event.type);
         return new Response(null, {status: 200});
+
+    })
+
+})
+
+http.route({
+    path: "/polar-webhook",
+    method: "POST",
+    handler: httpAction(async (ctx, request)=> {
+        const payloadString = await request.text();
+        const secret = process.env.POLAR_WEBHOOK_SECRET ?? "";
+
+        let event: ReturnType<typeof validateEvent>;
+        try {
+            event = validateEvent(payloadString, polarHeaders(request), secret);
+        } catch (error) {
+            if (error instanceof WebhookVerificationError) {
+                return new Response("invalid signature", { status: 403 });
+            }
+            console.error("Polar webhook validation error", error);
+            return new Response("error", { status: 400 });
+        }
+
+        if (POLAR_SUBSCRIPTION_EVENTS.has(event.type)) {
+            const sub = (event as { data: PolarSubscriptionPayload }).data;
+            const organizationId = resolveClerkOrganizationId(sub);
+
+            if(!organizationId){
+                console.warn("Polar webhook: missing Clerk organization id on subscription", event.type);
+                return new Response(null, { status: 202 });
+            }
+
+            await clerkClient.organizations.updateOrganization(organizationId, {
+                maxAllowedMemberships: seatCapForPolarStatus(sub.status),
+            });
+
+            await ctx.runMutation(internal.system.subscriptions.upsert, {
+                organizationId,
+                status: convexStatusFromPolar(sub.status),
+            });
+        }
+
+        return new Response(null, { status: 202 });
 
     })
 

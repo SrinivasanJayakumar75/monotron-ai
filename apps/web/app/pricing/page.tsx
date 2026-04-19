@@ -29,7 +29,6 @@ const plans = [
       "Gmail Integration",
       "Bulk email marketing upto 60000 emails a month",
       "Shedule Emails to individual clients",
-      "Website analytics",
       "Escalate Feature for Human Chat",
       "Team collaboration",
       "Knowledge Base",

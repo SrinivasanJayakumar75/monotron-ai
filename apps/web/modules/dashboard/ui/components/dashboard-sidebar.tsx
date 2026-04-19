@@ -7,7 +7,6 @@ import {CreditCardIcon,
     BrushIcon,
     MicVocalIcon,
     ChartBarIcon,
-    GlobeIcon,
     WorkflowIcon,
     MailsIcon,
     ChevronRightIcon,
@@ -46,11 +45,6 @@ const customerSupportItems = [
         title: "Knowledge Base",
         url: "/files",
         icon: AnchorIcon,
-    },
-    {
-        title: "Website analytics",
-        url: "/website-analytics",
-        icon: GlobeIcon,
     },
 
 ];
