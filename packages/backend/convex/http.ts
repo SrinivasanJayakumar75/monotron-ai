@@ -2,8 +2,100 @@ import {httpRouter} from "convex/server";
 import { createClerkClient } from "@clerk/backend";
 import type {WebhookEvent} from "@clerk/backend";
 import {Webhook} from "svix";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+
+const RAZORPAY_ACTIVE_EVENTS = new Set([
+    "payment.captured",
+    "payment_link.paid",
+    "subscription.activated",
+    "subscription.charged",
+    "subscription.resumed",
+]);
+
+const RAZORPAY_INACTIVE_EVENTS = new Set([
+    "payment.failed",
+    "subscription.cancelled",
+    "subscription.completed",
+    "subscription.halted",
+    "subscription.paused",
+]);
+
+function isSupportedRazorpayEvent(eventType: string): boolean {
+    return RAZORPAY_ACTIVE_EVENTS.has(eventType) || RAZORPAY_INACTIVE_EVENTS.has(eventType);
+}
+
+type RazorpayEntity = {
+    notes?: Record<string, unknown>;
+    status?: string;
+};
+
+type RazorpayWebhookPayload = {
+    event: string;
+    payload?: {
+        payment?: { entity?: RazorpayEntity };
+        payment_link?: { entity?: RazorpayEntity };
+        subscription?: { entity?: RazorpayEntity };
+    };
+};
+
+function resolveClerkOrganizationId(entity: RazorpayEntity | undefined): string | null {
+    const meta = entity?.notes ?? {};
+    const fromMeta = meta.clerk_organization_id ?? meta.clerkOrganizationId;
+    if (typeof fromMeta === "string" && fromMeta.length > 0) {
+        return fromMeta;
+    }
+    const ext = meta.customer_external_id;
+    if (typeof ext === "string" && ext.length > 0) {
+        return ext;
+    }
+    return null;
+}
+
+function convexStatusFromRazorpay(eventType: string, entityStatus?: string): string {
+    if (RAZORPAY_ACTIVE_EVENTS.has(eventType)) {
+        return "active";
+    }
+    if (RAZORPAY_INACTIVE_EVENTS.has(eventType)) {
+        return "inactive";
+    }
+    if (
+        entityStatus === "paid" ||
+        entityStatus === "captured" ||
+        entityStatus === "active" ||
+        entityStatus === "authenticated"
+    ) {
+        return "active";
+    }
+    return "inactive";
+}
+
+function seatCapForStatus(status: string): number {
+    return status === "active" ? 5 : 1;
+}
+
+function verifyRazorpaySignature(payload: string, signature: string, secret: string): boolean {
+    if (!signature || !secret) {
+        return false;
+    }
+
+    const expected = createHmac("sha256", secret).update(payload).digest("hex");
+    const signatureBuf = Buffer.from(signature);
+    const expectedBuf = Buffer.from(expected);
+    if (signatureBuf.length !== expectedBuf.length) {
+        return false;
+    }
+    return timingSafeEqual(signatureBuf, expectedBuf);
+}
+
+function resolveRazorpayEntity(event: RazorpayWebhookPayload): RazorpayEntity | undefined {
+    return (
+        event.payload?.payment_link?.entity ??
+        event.payload?.subscription?.entity ??
+        event.payload?.payment?.entity
+    );
+}
 
 function weakHash(s: string) {
     let h = 0;
@@ -182,45 +274,59 @@ http.route({
 http.route({
     path: "/clerk-webhook",
     method: "POST",
-    handler: httpAction(async (ctx, request)=> {
+    handler: httpAction(async (_ctx, request)=> {
         const event = await validateRequest(request);
 
         if(!event){
             return new Response("Error occured", {status: 400});
         }
 
-        switch (event.type){
-            case "subscription.updated": {
-                const subscription = event.data as {
-                    status: string;
-                    payer?: {
-                        organization_id: string;
-                    }
-                }
-                const organizationId = subscription.payer?.organization_id;
-
-                if(!organizationId){
-                    return new Response("Missing Organization ID", {status: 400})
-                }
-
-                const newMaxAllowedMemberships = subscription.status === "active" ? 5 : 1;
-
-                await clerkClient.organizations.updateOrganization(organizationId, {
-                    maxAllowedMemberships: newMaxAllowedMemberships
-                });
-
-                await ctx.runMutation(internal.system.subscriptions.upsert, {
-                    organizationId,
-                    status: subscription.status,
-                });
-
-
-                break;
-            }
-            default:
-                console.log("Ignored Clerk webhook event", event.type);
-        }
+        console.log("Clerk webhook received", event.type);
         return new Response(null, {status: 200});
+
+    })
+
+})
+
+http.route({
+    path: "/razorpay-webhook",
+    method: "POST",
+    handler: httpAction(async (ctx, request)=> {
+        const payloadString = await request.text();
+        const secret = process.env.RAZORPAY_WEBHOOK_SECRET ?? "";
+        const signature = request.headers.get("x-razorpay-signature") ?? "";
+        if (!verifyRazorpaySignature(payloadString, signature, secret)) {
+            return new Response("invalid signature", { status: 403 });
+        }
+
+        let event: RazorpayWebhookPayload;
+        try {
+            event = JSON.parse(payloadString) as RazorpayWebhookPayload;
+        } catch {
+            return new Response("invalid payload", { status: 400 });
+        }
+        if (!isSupportedRazorpayEvent(event.event)) {
+            return new Response(null, { status: 202 });
+        }
+
+        const entity = resolveRazorpayEntity(event);
+        const organizationId = resolveClerkOrganizationId(entity);
+        if(!organizationId){
+            console.warn("Razorpay webhook: missing Clerk organization id", event.event);
+            return new Response(null, { status: 202 });
+        }
+
+        const status = convexStatusFromRazorpay(event.event, entity?.status);
+        await clerkClient.organizations.updateOrganization(organizationId, {
+            maxAllowedMemberships: seatCapForStatus(status),
+        });
+
+        await ctx.runMutation(internal.system.subscriptions.upsert, {
+            organizationId,
+            status,
+        });
+
+        return new Response(null, { status: 202 });
 
     })
 
