@@ -1,17 +1,8 @@
 "use client";
 
-import { useOrganization } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
-import { api } from "@workspace/backend/_generated/api";
 import { PricingTable } from "../components/pricing-table";
 
 export const BillingView = () => {
-    const { organization } = useOrganization();
-    const pro = useQuery(
-        api.public.subscriptions.proStatus,
-        organization?.id ? { organizationId: organization.id } : "skip",
-    );
-
     return (
         <div className="flex min-h-screen flex-col bg-muted p-8">
             <div className="mx-auto w-full max-w-screen-md">
@@ -19,15 +10,6 @@ export const BillingView = () => {
                     <h1 className="text-2xl md:text-4xl">Plans & Billing</h1>
                     <p>Choose the plan that&apos;s right for your organization. Pro is billed through Razorpay.</p>
                 </div>
-
-                {pro?.isPro ? (
-                    <div className="mt-6 rounded-lg border bg-card p-4 text-card-foreground">
-                        <p className="font-medium">Your organization has an active Pro subscription.</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Manage billing and invoices through Razorpay.
-                        </p>
-                    </div>
-                ) : null}
 
                 <div className="mt-8">
                     <PricingTable />
