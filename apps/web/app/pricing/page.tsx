@@ -120,7 +120,7 @@ const Pricing = () => {
         <div className="container px-6 text-center">
           <h2 className="text-2xl font-bold mb-4">Have Questions?</h2>
           <p className="text-muted-foreground mb-6">
-            Our team is here to help you find the perfect plan for your needs.
+            Our team is here to help you find the perfect tailored plan for your needs.
           </p>
           <Link href="mailto:monotron.contact@gmail.com">
           <Button variant="destructive" size="lg">
