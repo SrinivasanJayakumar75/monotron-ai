@@ -5,6 +5,8 @@ import "@workspace/ui/globals.css"
 import { Providers } from "@/components/providers"
 import { Toaster} from "@workspace/ui/components/sonner";
 
+const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -26,19 +28,26 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
       >
-        <ClerkProvider
-        appearance={{
-          variables: {
-            colorPrimary: "#3C82F6"
-          }
-        }}>
-        <Providers>
-          <Toaster/>
-          
-          {children}
-        
+        {clerkPublishableKey ? (
+          <ClerkProvider
+            publishableKey={clerkPublishableKey}
+            appearance={{
+              variables: {
+                colorPrimary: "#3C82F6",
+              },
+            }}
+          >
+            <Providers>
+              <Toaster/>
+              {children}
+            </Providers>
+          </ClerkProvider>
+        ) : (
+          <Providers>
+            <Toaster/>
+            {children}
           </Providers>
-        </ClerkProvider>
+        )}
       </body>
     </html>
   )
