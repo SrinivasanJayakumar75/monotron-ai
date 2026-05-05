@@ -8,7 +8,6 @@ import {CreditCardIcon,
     MicVocalIcon,
     ChartBarIcon,
     WorkflowIcon,
-    MailsIcon,
     ChevronRightIcon,
 } from "lucide-react";
 
@@ -35,11 +34,6 @@ const customerSupportItems = [
         title: "Conversations",
         url: "/conversations",
         icon: ChartBarIcon,
-    },
-    {
-        title: "Bulk email",
-        url: "/bulk-email",
-        icon: MailsIcon,
     },
         {
         title: "Knowledge Base",
