@@ -1,4 +1,6 @@
-import IntegCTA from "./IntegCTA";
+import dynamic from "next/dynamic";
+
+const IntegCTA = dynamic(() => import("./IntegCTA"), { ssr: false });
 
 export default function IntegrationPage() {
   const steps = [
