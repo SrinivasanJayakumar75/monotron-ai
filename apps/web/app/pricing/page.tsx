@@ -19,7 +19,7 @@ const plans = [
   },
   {
     name: "Pro plan",
-    price: "$6",
+    price: "$4",
     period: "/month",
     description: "For growing teams and businesses",
     features: [

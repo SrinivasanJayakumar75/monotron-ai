@@ -1,32 +1,30 @@
-"use client";
+import dynamic from "next/dynamic";
 
-import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
-
+const IntegCTA = dynamic(() => import("./IntegCTA"), { ssr: false });
 
 export default function IntegrationPage() {
-    const { isSignedIn } = useUser();
   const steps = [
     {
       number: 1,
       title: "Create Your Account",
-      description: "Sign up and set up your organization to get started."
+      description: "Sign up and set up your organization to get started.",
     },
     {
       number: 2,
       title: "Get Integration Script",
-      description: "Navigate to integrations and copy your unique script."
+      description: "Navigate to integrations and copy your unique script.",
     },
     {
       number: 3,
       title: "Activate AI Chat",
-      description: "Visit billing to unlock your AI chat feature."
+      description: "Visit billing to unlock your AI chat feature.",
     },
     {
       number: 4,
       title: "Build Knowledge Base",
-      description: "Create and upload your product knowledge base for intelligent responses."
-    }
+      description:
+        "Create and upload your product knowledge base for intelligent responses.",
+    },
   ];
 
   return (
@@ -72,11 +70,7 @@ export default function IntegrationPage() {
 
         {/* Call to Action */}
         <div className="mt-16 text-center">
-            <Link href={isSignedIn ? "/conversations" : "/sign-up"} className="block">
-          <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold px-8 py-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
-            Get Started Now
-          </button>
-          </Link>
+          <IntegCTA />
         </div>
       </div>
     </section>

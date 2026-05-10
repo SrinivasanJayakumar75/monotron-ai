@@ -6,12 +6,21 @@ import {ConvexReactClient} from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { useAuth} from '@clerk/nextjs'
 
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // Avoid constructing Convex client with an empty URL during build/prerender.
+  const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
+
   return (
-    <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-      {children}
-      </ConvexProviderWithClerk>
+    <>
+      {convex ? (
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          {children}
+        </ConvexProviderWithClerk>
+      ) : (
+        children
+      )}
+    </>
   );
 }
