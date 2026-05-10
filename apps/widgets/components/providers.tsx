@@ -9,7 +9,7 @@ const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 export function Providers({ children }: { children: React.ReactNode }) {
   // During Vercel builds, env vars can be missing for preview environments.
   // Avoid constructing Convex clients with an empty/invalid URL (prerender crashes).
-  const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
+  const convex = convexUrl && convexUrl.startsWith("http") ? new ConvexReactClient(convexUrl) : null;
 
   return (
     <Provider>
