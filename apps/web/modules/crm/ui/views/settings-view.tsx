@@ -5,7 +5,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import {
     Select,
@@ -26,9 +25,6 @@ export const SettingsView = () => {
     const upsertSettings = useMutation(api.private.crmSettings.upsert);
 
     const [defaultCurrency, setDefaultCurrency] = useState("USD");
-    const [taxRate, setTaxRate] = useState("0");
-    const [fiscalYearStartMonth, setFiscalYearStartMonth] = useState("1");
-    const [autoNumbering, setAutoNumbering] = useState(true);
     const [saving, setSaving] = useState(false);
 
     const currencySelectOptions = useMemo(() => {
@@ -42,9 +38,6 @@ export const SettingsView = () => {
     useEffect(() => {
         if (!settings) return;
         setDefaultCurrency(normalizeCrmCurrencyCode(settings.defaultCurrency));
-        setTaxRate(String(settings.taxRate));
-        setFiscalYearStartMonth(String(settings.fiscalYearStartMonth));
-        setAutoNumbering(settings.autoNumbering);
     }, [settings]);
 
     const onSave = async () => {
@@ -52,9 +45,9 @@ export const SettingsView = () => {
         try {
             await upsertSettings({
                 defaultCurrency: defaultCurrency.trim().toUpperCase() || DEFAULT_CRM_CURRENCY,
-                taxRate: Number(taxRate) || 0,
-                fiscalYearStartMonth: Number(fiscalYearStartMonth) || 1,
-                autoNumbering,
+                taxRate: settings?.taxRate ?? 0,
+                fiscalYearStartMonth: settings?.fiscalYearStartMonth ?? 1,
+                autoNumbering: settings?.autoNumbering ?? true,
             });
             toast.success("CRM settings saved");
         } catch (e) {
@@ -95,45 +88,12 @@ export const SettingsView = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                    </div>
-
-                    <div className="space-y-6 rounded-xl border border-slate-200/80 bg-white/90 p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold">Other CRM defaults</h2>
-                    <div className="space-y-1">
-                        <Label>Tax rate %</Label>
-                        <Input value={taxRate} onChange={(e) => setTaxRate(e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                        <Label>Fiscal year start month (1-12)</Label>
-                        <Input
-                            value={fiscalYearStartMonth}
-                            onChange={(e) => setFiscalYearStartMonth(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex items-center justify-between rounded-md border p-3">
-                        <div>
-                            <p className="font-medium">Auto numbering</p>
-                            <p className="text-sm text-muted-foreground">
-                                Automatically generate document numbers for sales docs.
-                            </p>
-                        </div>
-                        <input
-                            type="checkbox"
-                            checked={autoNumbering}
-                            onChange={(e) => setAutoNumbering(e.target.checked)}
-                            className="h-4 w-4"
-                        />
-                    </div>
-                    <Button className={CRM_PRIMARY_BTN} onClick={onSave} disabled={saving}>
-                        {saving ? "Saving…" : "Save all settings"}
-                    </Button>
-                    <p className="text-muted-foreground text-xs">
-                        Saves currency, tax, fiscal year, and auto numbering together.
-                    </p>
+                        <Button className={`${CRM_PRIMARY_BTN} mt-6`} onClick={onSave} disabled={saving}>
+                            {saving ? "Saving…" : "Save settings"}
+                        </Button>
                     </div>
                 </div>
             </div>
         </div>
     );
 };
-

@@ -8,7 +8,6 @@ import {CreditCardIcon,
     MicVocalIcon,
     ChartBarIcon,
     WorkflowIcon,
-    MailsIcon,
     ChevronRightIcon,
 } from "lucide-react";
 
@@ -36,11 +35,6 @@ const customerSupportItems = [
         url: "/conversations",
         icon: ChartBarIcon,
     },
-    {
-        title: "Bulk email",
-        url: "/bulk-email",
-        icon: MailsIcon,
-    },
         {
         title: "Knowledge Base",
         url: "/files",
@@ -60,11 +54,9 @@ const crmModuleItems = [
     { title: "Events", url: "/crm/events" },
     { title: "Emails", url: "/crm/emails" },
     { title: "Calls", url: "/crm/calls" },
-    { title: "Products", url: "/crm/products" },
     { title: "Orders", url: "/crm/orders" },
     { title: "Quotes", url: "/crm/quotes" },
     { title: "Payments", url: "/crm/payments" },
-    { title: "Invoices", url: "/crm/invoices" },
     { title: "CRM settings", url: "/crm/settings" },
 ];
 

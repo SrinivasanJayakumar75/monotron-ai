@@ -538,7 +538,7 @@ export const LeadsView = () => {
 
                 <div className="border border-slate-200 bg-white shadow-sm">
                     <Table className="min-w-[1280px] text-sm">
-                        <TableHeader className="sticky top-0 z-20 border-b border-slate-200 bg-[#eaf0f6] [&_tr]:border-0">
+                        <TableHeader className="border-b border-slate-200 bg-[#eaf0f6] [&_tr]:border-0">
                             <TableRow className="border-0 hover:bg-transparent">
                                 <TableHead className="w-10 px-2 py-2">
                                     <input
