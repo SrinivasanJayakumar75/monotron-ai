@@ -66,6 +66,8 @@ export const create = action({
         conversation.status === "unresolved" && subscription?.status === "active"
 
         if(shouldTriggerAgent){
+        const isGreeting = /^(hi|hello|hey|good\s+(morning|afternoon|evening))[!.\s]*$/i
+            .test(args.prompt.trim());
 
         await supportAgent.generateText(
             ctx,
@@ -76,7 +78,14 @@ export const create = action({
                     escalateConversationTool: escalateConversation,
                     resolveConversation: resolveConversation,
                     searchTool: search,
-                }
+                },
+                // Product questions must be grounded in the organization's
+                // knowledge base instead of relying on the model to choose
+                // whether to call the search tool.
+                toolChoice: isGreeting ? "auto" : {
+                    type: "tool",
+                    toolName: "searchTool",
+                },
             }
         )} else{
             await saveMessage(ctx, components.agent,{
