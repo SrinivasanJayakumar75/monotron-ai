@@ -5,7 +5,7 @@ import { LoaderIcon } from "lucide-react";
 import { contactSessionIdAtomFamily, errorMessageAtom, loadingMessageAtom, organizationIdAtom, screenAtom, widgetSettingsAtom,vapiSecretsAtom } from "../../atoms/widget-atoms";
 import { WidgetHeader } from "../components/widget-header";
 import { useEffect, useState } from "react";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useConvex, useMutation } from "convex/react";
 import { api } from "@workspace/backend/_generated/api";
 import Image from "next/image";
 import { Id } from "@workspace/backend/_generated/dataModel";
@@ -23,6 +23,7 @@ export const WidgetLoadingScreen = ({organizationId}:{organizationId: string | n
     const setErrorMessage = useSetAtom(errorMessageAtom);
     const setScreen = useSetAtom(screenAtom);
     const setVapiSecrets = useSetAtom(vapiSecretsAtom);
+    const convex = useConvex();
 
     const contactSessionId = useAtomValue(contactSessionIdAtomFamily(organizationId || ""));
 
@@ -95,11 +96,6 @@ export const WidgetLoadingScreen = ({organizationId}:{organizationId: string | n
         })
     }, [step, contactSessionId, validateContactSession, setLoadingmessage]);
 
-    const widgetSettings = useQuery(api.public.widgetSettings.getByOrganizationId,
-        organizationId ? {
-            organizationId,
-        } : "skip",
-    );
     useEffect(() => {
         if(step !== "settings"){
             return;
@@ -107,18 +103,51 @@ export const WidgetLoadingScreen = ({organizationId}:{organizationId: string | n
 
         setLoadingmessage("Loading widget settings...");
 
-        if (widgetSettings != undefined){
-            setWidgetSettings(widgetSettings);
-            setStep("vapi");
-
+        if (!organizationId) {
+            setErrorMessage("Organization ID is required");
+            setScreen("error");
+            return;
         }
+
+        let cancelled = false;
+        let timeoutId: number | undefined;
+        const timeout = new Promise<never>((_, reject) => {
+            timeoutId = window.setTimeout(() => reject(new Error("Timed out loading widget settings")), 10_000);
+        });
+
+        // Fetch the initial configuration over HTTP. The reactive `useQuery` subscription
+        // can remain pending forever when a host network blocks Convex WebSockets.
+        Promise.race([
+            convex.query(api.public.widgetSettings.getByOrganizationId, { organizationId }),
+            timeout,
+        ])
+            .then((settings) => {
+                if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+                if (cancelled) return;
+                setWidgetSettings(settings);
+                setStep("vapi");
+            })
+            .catch(() => {
+                if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+                if (cancelled) return;
+                setErrorMessage("Unable to load widget settings. Please try again shortly.");
+                setScreen("error");
+            });
+
+        return () => {
+            cancelled = true;
+            if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+        };
 
     }, [
         step,
-        widgetSettings,
+        organizationId,
+        convex,
         setStep,
         setWidgetSettings,
         setLoadingmessage,
+        setErrorMessage,
+        setScreen,
     ]);
 
     const getVapiSecrets = useAction(api.public.secrets.getVapiSecrets);
