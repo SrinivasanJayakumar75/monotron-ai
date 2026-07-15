@@ -190,6 +190,9 @@ http.route({
         }
 
         switch (event.type){
+            // Persist the first subscription event as well as later changes.
+            // Otherwise a newly active organization cannot use the AI widget.
+            case "subscription.created":
             case "subscription.updated": {
                 const subscription = event.data as {
                     status: string;
