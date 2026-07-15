@@ -28,7 +28,7 @@ const plans = [
       "Knowledge Base",
       "Dashboard live chat with website visitors",
       "Human to human chat",
-      "Ai Voice interaction Feature",
+      "Ai voice agent",
       "Inbuilt CRM (manage leads, deals, tasks many more)",
       "Escalate Feature for Human Chat",
       "Team collaboration"
